@@ -79,7 +79,6 @@ const themes = {
 // ─── Sub-components ───────────────────────────────────────────
 function GaugeBar({ value, limit, color, t, a, trafficLight }) {
   const over = value > limit;
-  const ratio = value / limit;
   const headroom = limit - value;
   let barColor = color;
   if (trafficLight) {
