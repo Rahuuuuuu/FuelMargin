@@ -516,7 +516,7 @@ export default function App() {
       {/* Settings backdrop */}
       {settingsOpen && (
         <div onClick={()=>setSettingsOpen(false)}
-          style={{ position:"fixed", inset:0, zIndex:99 }} />
+          style={{ position:"fixed", inset:0, zIndex:78 }} />
       )}
 
       {/* Flash overlay */}
