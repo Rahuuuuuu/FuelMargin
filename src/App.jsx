@@ -151,8 +151,11 @@ function AxleCard({ label, current, limit, color, t, a, trafficLight, minVal }) 
         <span style={{ fontSize:9, color: badgeColor, fontWeight:700, fontFamily:"'Space Mono',monospace" }}>{badgeText}</span>
       </div>
       <RingGauge value={current} limit={limit} color={color} t={t} a={a} trafficLight={trafficLight} />
-      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:20, fontWeight:800, color: over||tooLight?a.redText:t.text, marginTop:-4 }}>
-        {fmt(current)} <span style={{ fontSize:11, fontWeight:400, color:t.textFaint, fontFamily:"'DM Sans',sans-serif" }}>lb</span>
+      <div style={{ marginTop:10, display:"flex", flexDirection:"column", alignItems:"center" }}>
+        <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:20, fontWeight:800, color: over||tooLight?a.redText:t.text, lineHeight:1 }}>
+          {fmt(current)}
+        </div>
+        <div style={{ fontSize:10, fontWeight:400, color:t.textFaint, fontFamily:"'DM Sans',sans-serif", marginTop:2, alignSelf:"flex-end", marginRight:4 }}>lb</div>
       </div>
       <div style={{ fontFamily:"'Space Mono',monospace", fontSize:9, color: tooLight?a.red:t.textFaint, marginTop:4 }}>
         {tooLight ? `min ${fmt(minVal)}` : `lim ${fmt(limit)}`}
@@ -295,7 +298,7 @@ export default function App() {
   const isDark = themeMode === "system" ? systemDark : themeMode === "dark";
   const t = isDark ? themes.dark : themes.light;
   const saveTheme = (v) => { setThemeMode(v); ls.set("qf_theme",v); };
-  const switchTab = (tab) => { setActiveTab(tab); ls.set("qf_activeTab", tab); };
+  const switchTab = (tab) => { setActiveTab(tab); ls.set("qf_activeTab", tab); window.scrollTo({ top: 0, behavior: "smooth" }); };
 
   const A = {
     green:  isDark ? "#4ade80" : t.accentGreen,
