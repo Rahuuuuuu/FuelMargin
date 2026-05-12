@@ -298,7 +298,7 @@ export default function App() {
   const isDark = themeMode === "system" ? systemDark : themeMode === "dark";
   const t = isDark ? themes.dark : themes.light;
   const saveTheme = (v) => { setThemeMode(v); ls.set("qf_theme",v); };
-  const switchTab = (tab) => { setActiveTab(tab); ls.set("qf_activeTab", tab); window.scrollTo({ top: 0, behavior: "smooth" }); };
+  const switchTab = (tab) => { setActiveTab(tab); ls.set("qf_activeTab", tab); };
 
   const A = {
     green:  isDark ? "#4ade80" : t.accentGreen,
@@ -549,6 +549,11 @@ export default function App() {
       prevSafe.current = safe;
     }
   }, [safe, weightsOK, fuelOK]);
+
+  // Scroll to top on every tab change, then let slider auto-scroll fire after its delay
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === "slider" && weightsOK && !spreadAxle && slideHoles !== 0) {
