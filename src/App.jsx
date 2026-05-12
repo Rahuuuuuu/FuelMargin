@@ -89,8 +89,8 @@ function GaugeBar({ value, limit, color, t, a, trafficLight }) {
     barColor = a.red;
   }
   return (
-    <div style={{ width:"100%", background: t.gaugeBg, borderRadius:6, height:8, overflow:"hidden", marginTop:6 }}>
-      <div style={{ width:`${pct(value,limit)}%`, height:"100%", background: barColor, borderRadius:6, transition:"width 0.4s cubic-bezier(.4,0,.2,1)" }} />
+    <div style={{ width:"100%", background: t.gaugeBg, borderRadius:4, height:8, overflow:"hidden", marginTop:6 }}>
+      <div style={{ width:`${pct(value,limit)}%`, height:"100%", background: barColor, borderRadius:4, transition:"width 0.4s cubic-bezier(.4,0,.2,1)" }} />
     </div>
   );
 }
@@ -134,7 +134,7 @@ function Toggle({ on, leftLabel, rightLabel, onColor="#4ade80", t }) {
   return (
     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
       {leftLabel && <span style={{ fontSize:11, color: on ? t.textFaint : onColor, fontWeight:700 }}>{leftLabel}</span>}
-      <div style={{ width:44, height:26, background: on?onColor:"rgba(128,128,128,0.2)", borderRadius:13, position:"relative", transition:"background 0.2s", flexShrink:0 }}>
+      <div style={{ width:44, height:26, background: on?onColor:"rgba(128,128,128,0.2)", borderRadius:99, position:"relative", transition:"background 0.2s", flexShrink:0 }}>
         <div style={{ position:"absolute", top:3, left: on?21:3, width:20, height:20, background:"#fff", borderRadius:"50%", transition:"left 0.2s", boxShadow:"0 1px 4px rgba(0,0,0,0.4)" }} />
       </div>
       {rightLabel && <span style={{ fontSize:11, color: on?onColor:t.textFaint, fontWeight:700 }}>{rightLabel}</span>}
@@ -163,7 +163,7 @@ function Divider({ t }) {
 
 function ModeButton({ active, label, color, onClick }) {
   return (
-    <button onClick={onClick} style={{ flex:1, padding:"9px 4px", borderRadius:10,
+    <button onClick={onClick} style={{ flex:1, padding:"9px 4px", borderRadius:8,
       border: active?`1.5px solid ${color}`:"1.5px solid rgba(128,128,128,0.15)",
       background: active?`${color}1a`:"transparent",
       color: active?color:"#888", fontSize:11, fontWeight:700,
@@ -480,7 +480,7 @@ export default function App() {
               <div style={{ display:"flex", alignItems:"flex-start", gap:12, marginBottom:20, cursor:"pointer" }}
                 onClick={() => setDisclaimerChecked(v => !v)}>
                 <div style={{
-                  width:22, height:22, borderRadius:6, flexShrink:0, marginTop:1,
+                  width:22, height:22, borderRadius:4, flexShrink:0, marginTop:1,
                   border:`2px solid ${disclaimerChecked ? A.green : t.textMuted}`,
                   background: disclaimerChecked ? (isDark ? `${A.green}25` : `${A.green}18`) : "transparent",
                   display:"flex", alignItems:"center", justifyContent:"center",
@@ -543,7 +543,7 @@ export default function App() {
           </h1>
           <div style={{ position:"relative" }}>
             <button onClick={()=>setSettingsOpen(o=>!o)} style={{
-              width:36, height:36, borderRadius:10,
+              width:36, height:36, borderRadius:8,
               border:`1.5px solid ${settingsOpen?t.text:t.border}`,
               background: settingsOpen?t.surface:"transparent",
               fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
@@ -554,13 +554,13 @@ export default function App() {
                 position:"absolute", top:44, right:0, zIndex:200,
                 background: isDark?"#1a1f2e":"#ffffff",
                 border:`1px solid ${t.border}`,
-                borderRadius:14, padding:"8px", minWidth:180,
+                borderRadius:16, padding:"8px", minWidth:180,
                 boxShadow: isDark?"0 8px 32px rgba(0,0,0,0.5)":"0 8px 32px rgba(0,0,0,0.15)",
               }}>
                 <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Appearance</div>
                 {[["system","System"],["light","Light"],["dark","Dark"]].map(([mode,label])=>(
                   <button key={mode} onClick={()=>{ saveTheme(mode); setSettingsOpen(false); }} style={{
-                    width:"100%", padding:"10px 12px", borderRadius:9, border:"none",
+                    width:"100%", padding:"10px 12px", borderRadius:8, border:"none",
                     background: themeMode===mode?(isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)"):"transparent",
                     color: themeMode===mode?t.text:t.textMuted,
                     fontSize:13, fontWeight: themeMode===mode?700:400,
@@ -619,19 +619,19 @@ export default function App() {
             </div>
           )}
           {fuelMode==="full" && (
-            <div style={{ marginBottom:6, background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:10, padding:"10px 14px", fontSize:13, color:isDark?"#86efac":A.green }}>
+            <div style={{ marginBottom:6, background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:12, padding:"10px 14px", fontSize:13, color:isDark?"#86efac":A.green }}>
               Adding <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{Math.max(0,fuelCapNum-galNowNum)} gal</strong> to reach full ({fuelCapNum} gal)
             </div>
           )}
           {fuelMode==="safe" && weightsOK && fuelOK && (
-            <div style={{ marginBottom:6, background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:10, padding:"10px 14px", fontSize:13, color:isDark?"#c4b5fd":A.purple }}>
+            <div style={{ marginBottom:6, background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:12, padding:"10px 14px", fontSize:13, color:isDark?"#c4b5fd":A.purple }}>
               Max safe fill: <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{maxSafeGal} gal</strong>
               <span style={{ fontSize:10, color:t.textFaint, marginLeft:6 }}>50 lb buffer applied</span>
               {maxSafeGal===0 && <span style={{ color:A.redText, marginLeft:8 }}>— already at or over limit</span>}
             </div>
           )}
           {fuelMode==="safe" && (!weightsOK||!fuelOK) && (
-            <div style={{ marginBottom:6, background:"rgba(167,139,250,0.05)", border:"1px solid rgba(167,139,250,0.15)", borderRadius:10, padding:"10px 14px", fontSize:12, color:isDark?"#7c6fa0":A.purple }}>
+            <div style={{ marginBottom:6, background:"rgba(167,139,250,0.05)", border:"1px solid rgba(167,139,250,0.15)", borderRadius:12, padding:"10px 14px", fontSize:12, color:isDark?"#7c6fa0":A.purple }}>
               Enter axle weights and current fuel to calculate max safe fill
             </div>
           )}
@@ -640,15 +640,15 @@ export default function App() {
             {(weightsOK || fuelOK) && !resetConfirm && (
               <button onClick={()=>setResetConfirm(true)} style={{
                 fontSize:10, color:t.textFaint, background:"transparent",
-                border:`1px solid ${t.border}`, borderRadius:6,
+                border:`1px solid ${t.border}`, borderRadius:4,
                 padding:"2px 7px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:0.3,
               }}>Reset</button>
             )}
             {resetConfirm && (
               <div style={{ display:"flex", alignItems:"center", gap:5 }}>
                 <span style={{ fontSize:10, color:A.red }}>Clear all?</span>
-                <button onClick={doReset} style={{ fontSize:10, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:6, padding:"2px 8px", cursor:"pointer" }}>Yes</button>
-                <button onClick={()=>setResetConfirm(false)} style={{ fontSize:10, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:6, padding:"2px 8px", cursor:"pointer" }}>No</button>
+                <button onClick={doReset} style={{ fontSize:10, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:4, padding:"2px 8px", cursor:"pointer" }}>Yes</button>
+                <button onClick={()=>setResetConfirm(false)} style={{ fontSize:10, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:4, padding:"2px 8px", cursor:"pointer" }}>No</button>
               </div>
             )}
           </div>
@@ -701,7 +701,7 @@ export default function App() {
                   {showProfileMenu && (
                     <>
                       <div onClick={()=>setShowProfileMenu(false)} style={{ position:"fixed", inset:0, zIndex:149 }} />
-                      <div style={{ position:"absolute", top:36, right:0, zIndex:150, background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:14, padding:"8px", minWidth:200, boxShadow: isDark?"0 8px 32px rgba(0,0,0,0.5)":"0 8px 32px rgba(0,0,0,0.15)" }}>
+                      <div style={{ position:"absolute", top:36, right:0, zIndex:150, background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:16, padding:"8px", minWidth:200, boxShadow: isDark?"0 8px 32px rgba(0,0,0,0.5)":"0 8px 32px rgba(0,0,0,0.15)" }}>
                         <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Saved Profiles</div>
                         {profiles.map(p => (
                           <div key={p.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 4px" }}>
@@ -713,7 +713,7 @@ export default function App() {
                               fontFamily:"'DM Sans',sans-serif", cursor:"pointer",
                             }}>{p.name}</button>
                             <button onClick={()=>deleteProfile(p.id)} style={{
-                              width:24, height:24, borderRadius:6, border:"none",
+                              width:24, height:24, borderRadius:4, border:"none",
                               background:"transparent", color:t.textFaint, cursor:"pointer", fontSize:14,
                             }}>&#x2715;</button>
                           </div>
@@ -738,7 +738,7 @@ export default function App() {
               }}>+ Save</button>
             </div>
           </div>
-          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:18, overflow:"hidden", boxShadow:t.shadow }}>
+          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
 
             {/* Axle Weights */}
             <div style={{ padding:"14px 16px" }}>
@@ -787,7 +787,7 @@ export default function App() {
         </div>
 
         {/* ── Fuel Section ──────────────────────────────────── */}
-        <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:18, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
+        <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
           <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase", marginBottom:14 }}>Fuel</div>
 
           {/* Current gallons — required */}
@@ -839,7 +839,7 @@ export default function App() {
                     {ticks.map(i => (
                       <button key={i} onClick={() => setGallonsNow(String(Math.round((i / 8) * fuelCapNum)))}
                         style={{
-                          flex:1, height:28, borderRadius:6, cursor:"pointer",
+                          flex:1, height:28, borderRadius:8, cursor:"pointer",
                           border: sliderVal === i ? `1.5px solid ${fuelColor}` : `1px solid ${t.border}`,
                           background: sliderVal === i
                             ? (isDark ? `${fuelColor}30` : `${fuelColor}20`)
@@ -884,7 +884,7 @@ export default function App() {
               { label:"Range Now",        val:fuelOK?`${rangeCurrent.toLocaleString()} mi`:"—",  color:A.blue },
               { label:"Range After Fill", val:fuelOK?`${rangeAfter.toLocaleString()} mi`:"—",    color:A.green },
             ].map(({label,val,color})=>(
-              <div key={label} style={{ background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", borderRadius:10, padding:"10px 12px", textAlign:"center" }}>
+              <div key={label} style={{ background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", borderRadius:12, padding:"10px 12px", textAlign:"center" }}>
                 <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
                 <div style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{val}</div>
               </div>
@@ -913,7 +913,7 @@ export default function App() {
 
         {/* Weight breakdown */}
         {weightsOK && fuelOK && effectiveGal > 0 && (
-          <div style={{ marginBottom:20, background:t.surface, border:`1px solid ${t.border}`, borderRadius:14, padding:"12px 16px" }}>
+          <div style={{ marginBottom:20, background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"12px 16px" }}>
             <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Weight Added Breakdown</div>
             {[
               { label:"Total fuel weight",   val:`${fmt(addedWeight)} lb`,             color:t.text },
@@ -941,7 +941,7 @@ export default function App() {
         ) : (
           <div style={{ marginBottom:20 }}>
             <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase", marginBottom:10 }}>Tandem Slider</div>
-            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:18, overflow:"hidden", boxShadow:t.shadow }}>
+            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
 
               {/* Hole spacing */}
               <div style={{ padding:"14px 16px" }}>
@@ -949,7 +949,7 @@ export default function App() {
                 <div style={{ display:"flex", gap:8 }}>
                   {[2,4,6].map(s=>(
                     <button key={s} onClick={()=>setHoleSpacing(s)} style={{
-                      flex:1, padding:"9px 4px", borderRadius:10,
+                      flex:1, padding:"9px 4px", borderRadius:8,
                       border: holeSpacing===s?`1.5px solid ${A.orange}`:"1.5px solid rgba(128,128,128,0.15)",
                       background: holeSpacing===s?(isDark?"rgba(251,146,60,0.12)":"rgba(154,52,18,0.08)"):"transparent",
                       color: holeSpacing===s?A.orange:t.textMuted,
@@ -975,7 +975,7 @@ export default function App() {
                     { val:"both",    label:"Minimize Over", color:"#a78bfa" },
                   ].map(({val,label,color})=>(
                     <button key={val} onClick={()=>setSlideGoal(val)} style={{
-                      flex:1, padding:"9px 4px", borderRadius:10,
+                      flex:1, padding:"9px 4px", borderRadius:8,
                       border: slideGoal===val?`1.5px solid ${color}`:"1.5px solid rgba(128,128,128,0.15)",
                       background: slideGoal===val?`${color}1a`:"transparent",
                       color: slideGoal===val?color:t.textMuted,
@@ -1043,12 +1043,12 @@ export default function App() {
                 {/* Legend */}
                 <div style={{ display:"flex", gap:14, marginBottom:10, flexWrap:"wrap" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                    <div style={{ width:10, height:10, borderRadius:3, background: isDark?"rgba(251,146,60,0.2)":"rgba(217,119,6,0.12)", border:`2px solid ${A.orange}` }} />
+                    <div style={{ width:10, height:10, borderRadius:4, background: isDark?"rgba(251,146,60,0.2)":"rgba(217,119,6,0.12)", border:`2px solid ${A.orange}` }} />
                     <span style={{ fontSize:10, color:t.textFaint }}>Current</span>
                   </div>
                   {currentHole !== "" && slideHoles !== 0 && (
                     <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                      <div style={{ width:10, height:10, borderRadius:3, border:`2px dashed ${slideDir==="forward"?A.orange:A.blue}` }} />
+                      <div style={{ width:10, height:10, borderRadius:4, border:`2px dashed ${slideDir==="forward"?A.orange:A.blue}` }} />
                       <span style={{ fontSize:10, color:t.textFaint }}>Target</span>
                     </div>
                   )}
@@ -1063,7 +1063,7 @@ export default function App() {
                   />
                   {currentHole !== "" && (
                     <button onClick={() => setCurrentHole("")}
-                      style={{ fontSize:11, color:t.textFaint, background:"transparent", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:6 }}>
+                      style={{ fontSize:11, color:t.textFaint, background:"transparent", border:"none", cursor:"pointer", padding:"4px 8px", borderRadius:4 }}>
                       Clear
                     </button>
                   )}
@@ -1107,7 +1107,7 @@ export default function App() {
                       ].map(({label,val,limit,color})=>{
                         const over = val > limit;
                         return (
-                          <div key={label} style={{ background: over?"rgba(255,68,68,0.07)":"rgba(74,222,128,0.05)", border:`1px solid ${over?"rgba(255,68,68,0.25)":"rgba(74,222,128,0.15)"}`, borderRadius:10, padding:"10px 12px" }}>
+                          <div key={label} style={{ background: over?"rgba(255,68,68,0.07)":"rgba(74,222,128,0.05)", border:`1px solid ${over?"rgba(255,68,68,0.25)":"rgba(74,222,128,0.15)"}`, borderRadius:12, padding:"10px 12px" }}>
                             <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:0.5, marginBottom:4 }}>{label}</div>
                             <div style={{ fontSize:17, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color: over?A.redText:t.text }}>{fmt(val)} lb</div>
                             <div style={{ fontSize:10, color: over?A.redText:A.green, fontWeight:700 }}>
@@ -1129,7 +1129,7 @@ export default function App() {
         </> /* end slider tab */}
 
         {/* Footer — always visible */}
-        <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:14, padding:"14px 16px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+        <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"14px 16px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
           {[
             { label:"Diesel Weight", val:"8 lb / gal" },
             { label:"Tank Capacity", val:`${fuelCapNum} gal` },
@@ -1161,12 +1161,12 @@ export default function App() {
                 placeholder="e.g. Pete 389 — 53ft Spread"
                 onChange={e=>setNewProfileName(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&saveProfile()}
-                style={{ width:"100%", background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", outline:"none", padding:"10px 14px" }}
+                style={{ width:"100%", background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:15, fontWeight:600, fontFamily:"'DM Sans',sans-serif", outline:"none", padding:"10px 14px" }}
                 autoFocus
               />
               <div style={{ display:"flex", gap:10, marginTop:18 }}>
-                <button onClick={()=>setShowSavePrompt(false)} style={{ flex:1, padding:"12px", borderRadius:10, border:`1px solid ${t.border}`, background:"transparent", color:t.textMuted, fontSize:13, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>Cancel</button>
-                <button onClick={saveProfile} disabled={!newProfileName.trim()} style={{ flex:2, padding:"12px", borderRadius:10, border:"none", background: newProfileName.trim()?A.green:t.border, color: newProfileName.trim()?(isDark?"#0d1a0f":"#fff"):t.textFaint, fontSize:13, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor: newProfileName.trim()?"pointer":"not-allowed", transition:"all 0.2s" }}>SAVE PROFILE</button>
+                <button onClick={()=>setShowSavePrompt(false)} style={{ flex:1, padding:"12px", borderRadius:8, border:`1px solid ${t.border}`, background:"transparent", color:t.textMuted, fontSize:13, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>Cancel</button>
+                <button onClick={saveProfile} disabled={!newProfileName.trim()} style={{ flex:2, padding:"12px", borderRadius:12, border:"none", background: newProfileName.trim()?A.green:t.border, color: newProfileName.trim()?(isDark?"#0d1a0f":"#fff"):t.textFaint, fontSize:13, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor: newProfileName.trim()?"pointer":"not-allowed", transition:"all 0.2s" }}>SAVE PROFILE</button>
               </div>
             </div>
           </div>
@@ -1195,7 +1195,7 @@ export default function App() {
               alignItems:"center", gap:3, transition:"all 0.15s",
             }}>
               <div style={{
-                width:32, height:3, borderRadius:2, marginBottom:2,
+                width:32, height:3, borderRadius:4, marginBottom:2,
                 background: active ? A.green : "transparent",
                 transition:"background 0.2s",
               }} />
