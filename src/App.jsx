@@ -240,12 +240,12 @@ function FuelGauge({ fraction, color, t, isDark }) {
         const angle = Math.PI * (1 - f); // π at left (E), 0 at right (F)
         const innerR = r - 14;
         const outerR = r - 7;
-        const x1 = cx - innerR * Math.cos(angle);
+        const x1 = cx + innerR * Math.cos(angle);
         const y1 = cy - innerR * Math.sin(angle);
-        const x2 = cx - outerR * Math.cos(angle);
+        const x2 = cx + outerR * Math.cos(angle);
         const y2 = cy - outerR * Math.sin(angle);
         const labelR = r - 22;
-        const lx = cx - labelR * Math.cos(angle);
+        const lx = cx + labelR * Math.cos(angle);
         const ly = cy - labelR * Math.sin(angle);
         const isE = i === 0;
         const isF = i === 4;
@@ -931,7 +931,7 @@ export default function App() {
 
               <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:8, borderTop:`1px solid ${t.divider}` }}>
                 <span style={{ fontSize:11, color:t.textSecondary, whiteSpace:"nowrap" }}>Or enter exact:</span>
-                <input type="number" inputMode="decimal" value={gallonsNow} placeholder="—" onChange={e=>setGallonsNow(e.target.value)} style={{ flex:1, background:"transparent", border:"none", borderBottom:`1.5px solid ${gallonsNow===""?"rgba(239,68,68,0.4)":t.borderStrong}`, color:gallonsNow===""?"#888":t.text, fontSize:20, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", outline:"none", padding:"4px 0", textAlign:"right" }} />
+                <input type="number" inputMode="decimal" value={gallonsNow} placeholder="—" onChange={e=>setGallonsNow(e.target.value)} style={{ flex:1, minWidth:0, background:"transparent", border:"none", borderBottom:`1.5px solid ${gallonsNow===""?"rgba(239,68,68,0.4)":t.borderStrong}`, color:gallonsNow===""?"#888":t.text, fontSize:20, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", outline:"none", padding:"4px 0", textAlign:"right" }} />
                 <span style={{ fontSize:12, color:t.textFaint, fontWeight:600 }}>gal</span>
               </div>
               {!fuelOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75 }}>Current fuel level required to calculate</div>}
