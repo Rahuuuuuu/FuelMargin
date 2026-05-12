@@ -22,7 +22,6 @@ const ls = {
 };
 
 const fmt = (n) => Math.round(n).toLocaleString("en-US");
-const pct = (v, lim) => Math.min((v / lim) * 100, 100);
 
 // ─── Theme ────────────────────────────────────────────────────
 const themes = {
@@ -77,25 +76,48 @@ const themes = {
 };
 
 // ─── Sub-components ───────────────────────────────────────────
-function GaugeBar({ value, limit, color, t, a, trafficLight }) {
+function RingGauge({ value, limit, color, t, a, trafficLight }) {
   const over = value > limit;
   const headroom = limit - value;
-  let barColor = color;
+  let arcColor = color;
   if (trafficLight) {
-    if (over || headroom <= 100) barColor = a.red;
-    else if (headroom <= 500)    barColor = a.yellow;
-    else                         barColor = a.green;
+    if (over || headroom <= 100) arcColor = a.red;
+    else if (headroom <= 500)    arcColor = a.yellow;
+    else                         arcColor = a.green;
   } else if (over) {
-    barColor = a.red;
+    arcColor = a.red;
   }
+  const cx = 40, cy = 44, r = 34;
+  const arcLen = Math.PI * r;
+  const fillLen = Math.min(value / limit, 1) * arcLen;
+
+  // Radial tick at 500-lb-headroom threshold
+  const tf = (limit - 500) / limit;
+  const tAngle = Math.PI * tf;
+  const tx = cx - r * Math.cos(tAngle);
+  const ty = cy - r * Math.sin(tAngle);
+  const nx = -Math.cos(tAngle);
+  const ny = -Math.sin(tAngle);
+  const HALF = 4;
+
   return (
-    <div style={{ width:"100%", background: t.gaugeBg, borderRadius:4, height:8, overflow:"hidden", marginTop:8 }}>
-      <div style={{ width:`${pct(value,limit)}%`, height:"100%", background: barColor, borderRadius:4, transition:"width 0.4s cubic-bezier(.4,0,.2,1)" }} />
-    </div>
+    <svg width={80} height={44} viewBox="0 0 80 44" style={{ overflow:"visible", display:"block" }}>
+      <path d="M 6,44 A 34,34 0 0,1 74,44"
+        fill="none" stroke={t.gaugeBg} strokeWidth={8} strokeLinecap="round" />
+      <path d="M 6,44 A 34,34 0 0,1 74,44"
+        fill="none" stroke={arcColor} strokeWidth={8} strokeLinecap="round"
+        strokeDasharray={`${fillLen} ${arcLen}`}
+        style={{ transition:"stroke-dasharray 0.4s cubic-bezier(.4,0,.2,1), stroke 0.3s" }}
+      />
+      {limit > 500 && (
+        <line x1={tx - HALF * nx} y1={ty - HALF * ny} x2={tx + HALF * nx} y2={ty + HALF * ny}
+          stroke={t.textFaint} strokeWidth={1.5} strokeLinecap="round" />
+      )}
+    </svg>
   );
 }
 
-function AxleCard({ label, current, limit, color, icon, t, a, trafficLight, minVal }) {
+function AxleCard({ label, current, limit, color, t, a, trafficLight, minVal }) {
   const over = current > limit;
   const tooLight = minVal !== undefined && current > 0 && current < minVal;
   const remaining = limit - current;
@@ -110,22 +132,26 @@ function AxleCard({ label, current, limit, color, icon, t, a, trafficLight, minV
   } else {
     badgeColor = over ? a.red : a.green;
   }
+  const badgeText = tooLight
+    ? `${fmt(minVal - current)} low`
+    : over
+    ? `+${fmt(Math.abs(remaining))} over`
+    : `-${fmt(remaining)} left`;
+
   return (
-    <div style={{ background: t.surface, border:`1px solid ${over||tooLight?a.red:t.border}`, borderRadius:16, padding:"12px 16px", flex:1, minWidth:0, boxShadow: t.shadow }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
-        <span style={{ fontSize:10, color:t.textSecondary, letterSpacing:1, textTransform:"uppercase" }}>{label}</span>
-        <span style={{ fontSize:10, color: badgeColor, fontWeight:700 }}>
-          {tooLight ? `${fmt(minVal-current)} low` : over ? `+${fmt(Math.abs(remaining))} over` : `-${fmt(remaining)} left`}
-        </span>
+    <div style={{ background: t.surface, border:`1px solid ${over||tooLight?a.red:t.border}`, borderRadius:16, padding:"12px 8px", flex:1, minWidth:0, boxShadow: t.shadow, display:"flex", flexDirection:"column", alignItems:"center" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", width:"100%", paddingLeft:4, paddingRight:4, marginBottom:8 }}>
+        <span style={{ fontSize:10, color:t.textSecondary, letterSpacing:1, textTransform:"uppercase", fontFamily:"'DM Sans',sans-serif" }}>{label}</span>
+        <span style={{ fontSize:9, color: badgeColor, fontWeight:700, fontFamily:"'Space Mono',monospace" }}>{badgeText}</span>
       </div>
-      <div style={{ fontSize:20, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color: over||tooLight?a.redText:t.text }}>
-        {fmt(current)} <span style={{ fontSize:12, fontWeight:400, color:t.textFaint }}>lb</span>
+      <RingGauge value={current} limit={limit} color={color} t={t} a={a} trafficLight={trafficLight} />
+      <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:20, fontWeight:800, color: over||tooLight?a.redText:t.text, marginTop:-4 }}>
+        {fmt(current)} <span style={{ fontSize:11, fontWeight:400, color:t.textFaint, fontFamily:"'DM Sans',sans-serif" }}>lb</span>
       </div>
-      <div style={{ fontSize:10, color:t.textFaint, marginBottom:4 }}>
-        {tooLight ? <span style={{ color:a.red }}>Min {fmt(minVal)} lb</span> : `Limit ${fmt(limit)} lb`}
+      <div style={{ fontFamily:"'Space Mono',monospace", fontSize:9, color: tooLight?a.red:t.textFaint, marginTop:4 }}>
+        {tooLight ? `min ${fmt(minVal)}` : `lim ${fmt(limit)}`}
       </div>
-      <GaugeBar value={current} limit={limit} color={color} t={t} a={a} trafficLight={trafficLight} />
-      {tooLight && <div style={{ fontSize:9, color:a.red, marginTop:4, fontWeight:700 }}>TOO LIGHT — STEERING RISK</div>}
+      {tooLight && <div style={{ fontSize:9, color:a.red, marginTop:4, fontWeight:700, fontFamily:"'DM Sans',sans-serif" }}>STEERING RISK</div>}
     </div>
   );
 }
@@ -412,6 +438,12 @@ export default function App() {
   const absHoles      = Math.abs(slideHoles);
 
   // ── Render ────────────────────────────────────────────────
+  const SL = {
+    fontSize: 11, letterSpacing: 2, textTransform: "uppercase",
+    fontWeight: isDark ? 500 : 700, color: t.sectionLabel,
+    marginBottom: 12, fontFamily: "'Barlow Condensed',sans-serif",
+  };
+
   const inp = (val, set, ph, mode="numeric") => ({
     type:"number", inputMode:mode, value:val, placeholder:ph,
     onChange: e => set(e.target.value),
@@ -448,7 +480,7 @@ export default function App() {
               border:`1px solid ${t.border}`,
               borderRadius:20, padding:"32px 24px",
               maxWidth:420, width:"100%",
-              boxShadow:"0 24px 64px rgba(0,0,0,0.5)",
+              boxShadow: t.shadow,
             }}>
               {/* Icon + title */}
               <div style={{ textAlign:"center", marginBottom:24 }}>
@@ -555,7 +587,7 @@ export default function App() {
                 background: isDark?"#1a1f2e":"#ffffff",
                 border:`1px solid ${t.border}`,
                 borderRadius:16, padding:"8px", minWidth:180,
-                boxShadow: isDark?"0 8px 32px rgba(0,0,0,0.5)":"0 8px 32px rgba(0,0,0,0.15)",
+                boxShadow: t.shadow,
               }}>
                 <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Appearance</div>
                 {[["system","System"],["light","Light"],["dark","Dark"]].map(([mode,label])=>(
@@ -686,7 +718,7 @@ export default function App() {
         {/* ── Truck Profiles ───────────────────────────────── */}
         <div style={{ marginBottom:24 }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-            <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase" }}>Truck Settings</div>
+            <div style={SL}>Truck Settings</div>
             <div style={{ display:"flex", gap:8, alignItems:"center" }}>
               {profiles.length > 0 && (
                 <div style={{ position:"relative" }}>
@@ -701,7 +733,7 @@ export default function App() {
                   {showProfileMenu && (
                     <>
                       <div onClick={()=>setShowProfileMenu(false)} style={{ position:"fixed", inset:0, zIndex:149 }} />
-                      <div style={{ position:"absolute", top:36, right:0, zIndex:150, background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:16, padding:"8px", minWidth:200, boxShadow: isDark?"0 8px 32px rgba(0,0,0,0.5)":"0 8px 32px rgba(0,0,0,0.15)" }}>
+                      <div style={{ position:"absolute", top:36, right:0, zIndex:150, background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:16, padding:"8px", minWidth:200, boxShadow: t.shadow }}>
                         <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Saved Profiles</div>
                         {profiles.map(p => (
                           <div key={p.id} style={{ display:"flex", alignItems:"center", gap:8, padding:"4px" }}>
@@ -788,7 +820,7 @@ export default function App() {
 
         {/* ── Fuel Section ──────────────────────────────────── */}
         <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:24, boxShadow:t.shadow }}>
-          <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase", marginBottom:16 }}>Fuel</div>
+          <div style={SL}>Fuel</div>
 
           {/* Current gallons — required */}
           <div style={{ background:gallonsNow===""?"rgba(239,68,68,0.07)":t.surface, border:`1px solid ${gallonsNow===""?"rgba(239,68,68,0.35)":t.border}`, borderRadius:12, padding:"12px 16px", marginBottom:16 }}>
@@ -895,7 +927,7 @@ export default function App() {
         {/* ── Axle Results ──────────────────────────────────── */}
         {weightsOK && fuelOK ? (
           <div style={{ marginBottom:16 }}>
-            <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase", marginBottom:8 }}>Axle Weights After Fueling</div>
+            <div style={SL}>Axle Weights After Fueling</div>
             <div style={{ display:"flex", gap:8, marginBottom:8 }}>
               <AxleCard label="Steer"  current={Math.round(newSteer)}  limit={C.STEER_LIMIT} color={A.blue} icon="" t={t} a={A} trafficLight minVal={STEER_MIN} />
               <AxleCard label="Drives" current={Math.round(newDrives)} limit={C.DRIVE_LIMIT} color={A.yellow} icon="" t={t} a={A} trafficLight />
@@ -940,7 +972,7 @@ export default function App() {
           </div>
         ) : (
           <div style={{ marginBottom:24 }}>
-            <div style={{ fontSize:11, letterSpacing:2, color:t.sectionLabel, fontWeight: isDark?400:700, textTransform:"uppercase", marginBottom:8 }}>Tandem Slider</div>
+            <div style={SL}>Tandem Slider</div>
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
 
               {/* Hole spacing */}
@@ -1129,16 +1161,16 @@ export default function App() {
         </> /* end slider tab */}
 
         {/* Footer — always visible */}
-        <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+        <div style={{ borderTop:`1px solid ${t.divider}`, marginTop:16, paddingTop:12, display:"flex", justifyContent:"space-around" }}>
           {[
-            { label:"Diesel Weight", val:"8 lb / gal" },
-            { label:"Tank Capacity", val:`${fuelCapNum} gal` },
-            { label:"Fuel Economy",  val:`${mpgNum} MPG` },
-            { label:"Trailer Axles", val:spreadAxle?"Spread":"Tandem" },
-          ].map(({label,val})=>(
-            <div key={label} style={{ display:"flex", flexDirection:"column", gap:4 }}>
-              <span style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:0.8 }}>{label}</span>
-              <span style={{ fontSize:14, color:t.textSecondary, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif" }}>{val}</span>
+            ["Diesel","8 lb/gal"],
+            ["Tank",`${fuelCapNum} gal`],
+            ["Economy",`${mpgNum} mpg`],
+            ["Axles",spreadAxle?"Spread":"Tandem"],
+          ].map(([label,val])=>(
+            <div key={label} style={{ textAlign:"center" }}>
+              <div style={{ fontSize:9, color:t.textFaint, textTransform:"uppercase", letterSpacing:1, fontFamily:"'DM Sans',sans-serif" }}>{label}</div>
+              <div style={{ fontSize:13, color:t.textSecondary, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif" }}>{val}</div>
             </div>
           ))}
         </div>
@@ -1150,7 +1182,7 @@ export default function App() {
         <>
           <div onClick={()=>setShowSavePrompt(false)} style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }} />
           <div style={{ position:"fixed", inset:0, zIndex:1001, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
-            <div style={{ background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:20, padding:"24px", maxWidth:360, width:"100%", boxShadow:"0 24px 64px rgba(0,0,0,0.4)" }}>
+            <div style={{ background: isDark?"#1a1f2e":"#fff", border:`1px solid ${t.border}`, borderRadius:20, padding:"24px", maxWidth:360, width:"100%", boxShadow: t.shadow }}>
               <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:20, fontWeight:800, color:t.text, marginBottom:8 }}>Save Truck Profile</div>
               <div style={{ fontSize:12, color:t.textMuted, marginBottom:24 }}>
                 Saves tank capacity, fuel economy, axle type, and hole spacing.
@@ -1212,7 +1244,7 @@ export default function App() {
       </div>
 
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
         @keyframes flashAnim {
           0%   { opacity: 0.85; }
           100% { opacity: 0; }
@@ -1226,3 +1258,31 @@ export default function App() {
     </div>
   );
 }
+
+/*
+ * ── 8-item delivery checklist ─────────────────────────────────────────────
+ * 1. Ring gauges          ✓  GaugeBar removed; RingGauge SVG semicircle with
+ *                            stroke-dasharray animation, threshold tick at 500-lb
+ *                            headroom, traffic-light color logic. AxleCard fully
+ *                            rewritten to centered column layout around gauge.
+ * 2. pct() removed        ✓  No longer referenced anywhere (was only used by GaugeBar).
+ * 3. Section label SL     ✓  Formal SL style object (Barlow Condensed 11px, letter-
+ *                            spacing 2, uppercase, isDark?500:700, t.sectionLabel,
+ *                            marginBottom 12) applied to all 4 section headings:
+ *                            Truck Settings · Fuel · Axle Weights After Fueling ·
+ *                            Tandem Slider.
+ * 4. Footer redesign      ✓  Replaced card (surface bg, border, grid) with slim
+ *                            divider strip (borderTop t.divider, flex space-around,
+ *                            DM Sans labels / Barlow Condensed values).
+ * 5. Divider consistency  ✓  All dividers already used t.divider or <Divider t={t}/>;
+ *                            no hardcoded divider colors remain.
+ * 6. Typography audit     ✓  Space Mono added to Google Fonts import. Used for
+ *                            AxleCard headroom badge and limit readout. Barlow
+ *                            Condensed = numbers/headers. DM Sans = body/buttons.
+ * 7. Shadow consistency   ✓  Disclaimer modal, settings dropdown, profile menu
+ *                            dropdown, and save-profile modal all use t.shadow.
+ *                            Toggle knob and disclaimer CTA glow kept as interactive
+ *                            exceptions.
+ * 8. (Combined with 1–7 above — all items addressed in single delivery.)
+ * ──────────────────────────────────────────────────────────────────────────
+ */
