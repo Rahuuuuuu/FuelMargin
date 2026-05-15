@@ -1,0 +1,13 @@
+Place your app icon files here:
+
+  icon-192.png  —  192 x 192 pixels
+  icon-512.png  —  512 x 512 pixels
+
+Generate them for free at:
+  https://favicon.io
+  https://realfavicongenerator.net
+
+Upload any square image (truck, fuel pump, or your own logo).
+A bold icon on a solid dark background works best on iPhone.
+
+These files are required for the PWA to install cleanly on iPhone.
