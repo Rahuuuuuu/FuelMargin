@@ -208,18 +208,14 @@ function ModeButton({ active, label, color, onClick }) {
   );
 }
 
-// Semicircle fuel gauge with animated needle
 function FuelGauge({ fraction, color, t, isDark }) {
   const cx = 100, cy = 100, r = 72;
   const arcLen = Math.PI * r;
   const clampedF = Math.max(0, Math.min(1, isNaN(fraction) ? 0 : fraction));
   const fillLen = clampedF * arcLen;
   const needleR = 54;
-  // -90deg at E (left), +90deg at F (right), so rotation = fraction*180 - 90 + (-90) = fraction*180 - 180
-  // simpler: at E (f=0): needle points left = -180 relative to right; rotate from -180 to 0
   const rotation = clampedF * 180 - 180;
 
-  // Tick marks at E ¼ ½ ¾ F
   const tickFracs = [0, 0.25, 0.5, 0.75, 1.0];
   const tickLabels = ["E", "¼", "½", "¾", "F"];
 
@@ -229,18 +225,15 @@ function FuelGauge({ fraction, color, t, isDark }) {
 
   return (
     <svg width="100%" viewBox="0 0 200 108" style={{ display:"block", maxWidth:280, margin:"0 auto", overflow:"visible" }}>
-      {/* Background arc */}
       <path d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
         fill="none" stroke={t.gaugeBg} strokeWidth={10} strokeLinecap="round" />
-      {/* Fill arc */}
       <path d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
         fill="none" stroke={gaugeColor} strokeWidth={10} strokeLinecap="round"
         strokeDasharray={`${fillLen} ${arcLen}`}
         style={{ transition:"stroke-dasharray 0.45s cubic-bezier(.4,0,.2,1), stroke 0.3s" }}
       />
-      {/* Tick marks */}
       {tickFracs.map((f, i) => {
-        const angle = Math.PI * (1 - f); // π at left (E), 0 at right (F)
+        const angle = Math.PI * (1 - f);
         const innerR = r - 14;
         const outerR = r - 7;
         const x1 = cx + innerR * Math.cos(angle);
@@ -265,7 +258,6 @@ function FuelGauge({ fraction, color, t, isDark }) {
           </g>
         );
       })}
-      {/* Needle */}
       <g style={{ transformOrigin:`${cx}px ${cy}px`, transform:`rotate(${rotation}deg)`, transition:"transform 0.45s cubic-bezier(.4,0,.2,1)" }}>
         <line x1={cx - 10} y1={cy} x2={cx + needleR} y2={cy}
           stroke={gaugeColor} strokeWidth={2.5} strokeLinecap="round"
@@ -273,7 +265,6 @@ function FuelGauge({ fraction, color, t, isDark }) {
         <line x1={cx - 10} y1={cy} x2={cx - 4} y2={cy}
           stroke={t.textFaint} strokeWidth={2.5} strokeLinecap="round" />
       </g>
-      {/* Center pivot */}
       <circle cx={cx} cy={cy} r={7} fill={gaugeColor} style={{ transition:"fill 0.3s" }} />
       <circle cx={cx} cy={cy} r={4} fill={isDark ? "#0a0f1e" : "#f0f4f0"} />
     </svg>
@@ -282,14 +273,13 @@ function FuelGauge({ fraction, color, t, isDark }) {
 
 // ─── Main App ─────────────────────────────────────────────────
 export default function App() {
-  // ── Theme ──────────────────────────────────────────────────
   const [themeMode, setThemeMode] = useState(() => ls.get("qf_theme","system"));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState(() => ls.get("qf_activeTab", "main"));
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => ls.get("qf_disclaimer_accepted", false));
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
+  const [resultsOpen, setResultsOpen] = useState(false);
 
-  // ── Orientation ────────────────────────────────────────────
   const [orientationComplete, setOrientationComplete] = useState(() => ls.get("qf_orientation_complete", false));
   const [orientationStep, setOrientationStep] = useState(1);
   const [isOnboardingProfile, setIsOnboardingProfile] = useState(false);
@@ -312,14 +302,12 @@ export default function App() {
     yellowBanner: isDark ? "#facc15" : t.accentYellowBanner,
   };
 
-  // ── Session fields (never persisted) ──────────────────────
   const [steer, setSteer]           = useState("");
   const [drives, setDrives]         = useState("");
   const [trailer, setTrailer]       = useState("");
   const [gallonsNow, setGallonsNow] = useState("");
   const [gallonsToAdd, setGallonsToAdd] = useState("");
 
-  // ── Persisted settings ────────────────────────────────────
   const [spreadAxle, _setSpreadAxle]     = useState(() => ls.get("qf_spreadAxle", false));
   const [fuelCapacity, _setFuelCapacity] = useState(() => ls.get("qf_fuelCapacity","150"));
   const [mpg, _setMpg]                   = useState(() => ls.get("qf_mpg","7.5"));
@@ -342,7 +330,6 @@ export default function App() {
   const setSteerMin     = (val) => { _setSteerMin(val);     ls.set("qf_steerMin",     val); };
   const setTrailerType  = (val) => { _setTrailerType(val);  ls.set("qf_trailerType",  val); };
 
-  // ── Truck profiles ────────────────────────────────────────
   const [profiles, setProfiles]             = useState(() => ls.get("qf_profiles", []));
   const [activeProfile, _setActiveProfile]  = useState(() => ls.get("qf_activeProfile", null));
   const [showSavePrompt, setShowSavePrompt] = useState(false);
@@ -350,20 +337,13 @@ export default function App() {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const setActiveProfile = (v) => { _setActiveProfile(v); ls.set("qf_activeProfile", v); };
 
-  // ── Reset confirm ─────────────────────────────────────────
   const [resetConfirm, setResetConfirm] = useState(false);
-
-  // ── Last session ──────────────────────────────────────────
-  const [lastSession, setLastSession] = useState(() => ls.get("qf_last_session", null));
-
-  // ── Flash / haptic ────────────────────────────────────────
-  const [flash, setFlash] = useState(null);
-  const prevSafe = useRef(null);
-
-  // ── Slider auto-scroll ref ────────────────────────────────
+  const [lastSession, setLastSession]   = useState(() => ls.get("qf_last_session", null));
+  const [flash, setFlash]               = useState(null);
+  const prevSafe   = useRef(null);
   const sliderResultRef = useRef(null);
 
-  // ── Derived numbers ───────────────────────────────────────
+  // ── Derived ───────────────────────────────────────────────
   const fuelCapNum  = Number(fuelCapacity) || 150;
   const mpgNum      = Number(mpg) || 7.5;
   const STEER_MIN   = Number(steerMin) || 10000;
@@ -378,6 +358,7 @@ export default function App() {
   const hasTrailer = trailer !== "";
   const weightsOK  = hasSteer && hasDrives && hasTrailer;
   const fuelOK     = gallonsNow !== "";
+  const readyToCalculate = weightsOK && fuelOK;
   const steerTooLight = weightsOK && steerNum < STEER_MIN && steerNum > 0;
 
   const estLevel = hasSteer ? (hasDrives ? (hasTrailer ? 3 : 2) : 1) : 0;
@@ -474,7 +455,6 @@ export default function App() {
   const newHole  = currentHoleN + slideHoles;
   const slideDir = slideHoles > 0 ? "forward" : slideHoles < 0 ? "back" : "none";
   const absHoles = Math.abs(slideHoles);
-
   const showSliderBadge = activeTab !== "slider" && weightsOK && !spreadAxle && slideHoles !== 0;
 
   // ── Handlers ──────────────────────────────────────────────
@@ -509,6 +489,7 @@ export default function App() {
     }
     setSteer(""); setDrives(""); setTrailer(""); setGallonsNow(""); setGallonsToAdd("");
     setResetConfirm(false);
+    setResultsOpen(false);
   };
 
   const saveProfile = () => {
@@ -550,7 +531,6 @@ export default function App() {
     }
   }, [safe, weightsOK, fuelOK]);
 
-  // Scroll to top on every tab change, then let slider auto-scroll fire after its delay
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
@@ -561,7 +541,6 @@ export default function App() {
     }
   }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Redirect away from slider tab if spread axle is activated
   useEffect(() => {
     if (spreadAxle && activeTab === "slider") switchTab("main");
   }, [spreadAxle]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -590,44 +569,26 @@ export default function App() {
     borderRadius:12, padding:"12px 8px", flex:1, textAlign:"center"
   });
 
-  // ── Orientation card content ───────────────────────────────
   const orientationCards = [
-    {
-      step: 1,
-      title: "Enter your weights",
-      body: "Start by entering your current steer, drive, and trailer axle weights from your last scale ticket. These reset every session.",
-      icon: "⚖️",
-    },
-    {
-      step: 2,
-      title: "Check your fuel",
-      body: "Enter your current fuel level using the gauge or type it in. MaxFuel will tell you the maximum you can safely add.",
-      icon: "⛽",
-    },
-    {
-      step: 3,
-      title: "Save your truck",
-      body: "Set your tank capacity, MPG, and axle type — then save them as a truck profile so you never have to enter them again.",
-      icon: "🚛",
-    },
+    { step:1, title:"Enter your weights", body:"Start by entering your current steer, drive, and trailer axle weights from your last scale ticket. These reset every session.", icon:"⚖️" },
+    { step:2, title:"Check your fuel",    body:"Enter your current fuel level using the gauge or type it in. MaxFuel will tell you the maximum you can safely add.", icon:"⛽" },
+    { step:3, title:"Save your truck",    body:"Set your tank capacity, MPG, and axle type — then save them as a truck profile so you never have to enter them again.", icon:"🚛" },
   ];
   const oc = orientationCards[orientationStep - 1];
 
-  // ── Build tab list ─────────────────────────────────────────
   const tabs = [
     { id:"main",   label:"Weights & Fuel" },
     { id:"truck",  label:"Truck" },
     ...(!spreadAxle ? [{ id:"slider", label:"Tandem Slider", badge: showSliderBadge }] : []),
   ];
 
-  // Trailer types
   const trailerTypes = ["Dry Van","Reefer","Flatbed","Step Deck","RGN","Lowboy","Other"];
 
   // ── Render ────────────────────────────────────────────────
   return (
     <div style={{ minHeight:"100vh", background: t.bg, fontFamily:"'DM Sans',sans-serif", color:t.text, padding:"0 0 80px 0", transition:"background 0.3s" }}>
 
-      {/* ── Disclaimer modal ── */}
+      {/* Disclaimer */}
       {!disclaimerAccepted && (
         <>
           <div style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.75)", backdropFilter:"blur(4px)" }} />
@@ -657,13 +618,10 @@ export default function App() {
         </>
       )}
 
-      {/* ── Orientation flow ── */}
+      {/* Orientation */}
       {disclaimerAccepted && !orientationComplete && (
         <>
-          <div
-            onClick={orientationStep > 1 ? dismissOrientation : undefined}
-            style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(4px)", cursor: orientationStep > 1 ? "pointer" : "default" }}
-          />
+          <div onClick={orientationStep > 1 ? dismissOrientation : undefined} style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.7)", backdropFilter:"blur(4px)", cursor: orientationStep > 1 ? "pointer" : "default" }} />
           <div style={{ position:"fixed", inset:0, zIndex:1001, display:"flex", alignItems:"center", justifyContent:"center", padding:"24px" }}>
             <div onClick={e => e.stopPropagation()} style={{ background: isDark?"#1a1f2e":"#ffffff", border:`1px solid ${t.border}`, borderRadius:20, padding:"32px 24px", maxWidth:380, width:"100%", boxShadow: t.shadow }}>
               <div style={{ display:"flex", justifyContent:"center", gap:6, marginBottom:24 }}>
@@ -672,22 +630,14 @@ export default function App() {
                 ))}
               </div>
               <div style={{ fontSize:36, textAlign:"center", marginBottom:16 }}>{oc.icon}</div>
-              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, color:t.text, textAlign:"center", marginBottom:12 }}>
-                {oc.title}
-              </div>
-              <div style={{ fontSize:14, color:t.textSub, lineHeight:1.6, textAlign:"center", marginBottom:32 }}>
-                {oc.body}
-              </div>
-              <div style={{ textAlign:"center", fontSize:10, color:t.textFaint, letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>
-                {orientationStep} of 3
-              </div>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, color:t.text, textAlign:"center", marginBottom:12 }}>{oc.title}</div>
+              <div style={{ fontSize:14, color:t.textSub, lineHeight:1.6, textAlign:"center", marginBottom:32 }}>{oc.body}</div>
+              <div style={{ textAlign:"center", fontSize:10, color:t.textFaint, letterSpacing:1.5, textTransform:"uppercase", marginBottom:16 }}>{orientationStep} of 3</div>
               <button onClick={advanceOrientation} style={{ width:"100%", padding:"16px", borderRadius:12, border:"none", background: A.green, color: isDark?"#0d1a0f":"#fff", fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", transition:"all 0.2s" }}>
                 {orientationStep === 3 ? "LET'S GO" : "NEXT"}
               </button>
               {orientationStep > 1 && (
-                <button onClick={dismissOrientation} style={{ width:"100%", marginTop:8, padding:"10px", borderRadius:8, border:"none", background:"transparent", color:t.textFaint, fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                  Skip setup
-                </button>
+                <button onClick={dismissOrientation} style={{ width:"100%", marginTop:8, padding:"10px", borderRadius:8, border:"none", background:"transparent", color:t.textFaint, fontSize:12, cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>Skip setup</button>
               )}
             </div>
           </div>
@@ -702,79 +652,165 @@ export default function App() {
         <div style={{ position:"fixed", inset:0, zIndex:999, pointerEvents:"none", background: flash==="safe"?t.flashSafe:t.flashDanger, animation:"flashAnim 0.7s ease-out forwards" }} />
       )}
 
-      {/* ── Sticky header panel ── */}
-      <div style={{ position:"sticky", top:0, zIndex:79, background: isDark?"#0a0f1e":"#f0f4f0", paddingTop:"env(safe-area-inset-top, 44px)", borderBottom:`1px solid ${t.border}`, boxShadow: isDark?"0 4px 20px rgba(0,0,0,0.6)":"0 4px 20px rgba(0,0,0,0.1)" }}>
-        {/* Title row + settings gear */}
-        <div style={{ padding:"8px 16px 0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <h1 style={{ margin:0, fontSize:20, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, letterSpacing:-0.5, color:t.text }}>
-            MaxFuel
-          </h1>
-          <div style={{ position:"relative" }}>
-            <button onClick={()=>setSettingsOpen(o=>!o)} style={{ width:36, height:36, borderRadius:8, border:`1.5px solid ${settingsOpen?t.text:t.border}`, background: settingsOpen?t.surface:"transparent", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:t.textMuted, transition:"all 0.15s" }}>&#9881;</button>
-            {settingsOpen && (
-              <div style={{ position:"absolute", top:44, right:0, zIndex:200, background: isDark?"#1a1f2e":"#ffffff", border:`1px solid ${t.border}`, borderRadius:16, padding:"8px", minWidth:180, boxShadow: t.shadow }}>
-                <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Appearance</div>
-                {[["system","System"],["light","Light"],["dark","Dark"]].map(([mode,label])=>(
-                  <button key={mode} onClick={()=>{ saveTheme(mode); setSettingsOpen(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"none", background: themeMode===mode?(isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)"):"transparent", color: themeMode===mode?t.text:t.textMuted, fontSize:13, fontWeight: themeMode===mode?700:400, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", display:"flex", alignItems:"center", gap:8, textAlign:"left", transition:"background 0.15s" }}>
-                    <span>{label}</span>
-                    {themeMode===mode && <span style={{ marginLeft:"auto", fontSize:12, color:A.green, fontWeight:900 }}>&#10003;</span>}
-                  </button>
+      {/* ── Results overlay ── */}
+      {resultsOpen && (
+        <div style={{ position:"fixed", inset:0, zIndex:200, background: isDark?"#0a0f1e":"#f0f4f0", overflowY:"auto", paddingBottom:40 }}>
+          {/* Overlay header */}
+          <div style={{ position:"sticky", top:0, zIndex:10, background: isDark?"rgba(10,15,30,0.97)":"rgba(240,244,240,0.97)", backdropFilter:"blur(12px)", borderBottom:`1px solid ${t.border}`, padding:"16px 20px", paddingTop:"max(16px, env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:t.text, letterSpacing:0.3 }}>Results</div>
+            <button onClick={()=>setResultsOpen(false)} style={{ fontSize:13, fontWeight:600, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 14px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+              ← Edit
+            </button>
+          </div>
+
+          <div style={{ padding:"20px 16px", maxWidth:480, margin:"0 auto" }}>
+
+            {/* Safe / Not Safe banner */}
+            <div style={{ borderRadius:20, padding:"20px 24px", marginBottom:20, background: safe?(isDark?"rgba(74,222,128,0.12)":"rgba(22,163,74,0.08)"):(isDark?"rgba(255,68,68,0.12)":"rgba(220,38,38,0.08)"), border:`2px solid ${safe?A.green:A.red}`, boxShadow: safe?`0 0 24px ${A.green}20`:`0 0 24px ${A.red}20` }}>
+              <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:32, fontWeight:800, letterSpacing:0.5, color: steerTooLight?A.redText:safe?A.greenBanner:A.redText }}>
+                {steerTooLight ? "STEER TOO LIGHT" : safe ? "SAFE TO ROLL" : "DO NOT ROLL"}
+              </div>
+              <div style={{ fontSize:13, color:t.textSecondary, marginTop:6 }}>
+                {steerTooLight
+                  ? <span style={{ color:A.red }}>Steer axle too light — {fmt(steerNum)} lb (min {fmt(STEER_MIN)} lb)</span>
+                  : <>Gross: {fmt(newGross)} lb &nbsp;·&nbsp;<span style={{ color:grossOver?A.red:A.green }}>{grossOver?`${fmt(Math.abs(grossRem))} over limit`:`${fmt(grossRem)} under limit`}</span></>
+                }
+              </div>
+            </div>
+
+            {/* Axle gauges */}
+            <div style={{ marginBottom:20 }}>
+              <div style={SL}>Axle Weights After Fueling</div>
+              <div style={{ display:"flex", gap:8, marginBottom:8 }}>
+                <AxleCard label="Steer"  current={Math.round(newSteer)}  limit={C.STEER_LIMIT} color={A.blue}   t={t} a={A} trafficLight minVal={STEER_MIN} />
+                <AxleCard label="Drives" current={Math.round(newDrives)} limit={C.DRIVE_LIMIT} color={A.yellow} t={t} a={A} trafficLight />
+              </div>
+              <div style={{ display:"flex", gap:8 }}>
+                <AxleCard label="Trailer" current={Math.round(newTrailer)} limit={trailerLim}    color={A.orange} t={t} a={A} trafficLight />
+                <AxleCard label="Gross"   current={Math.round(newGross)}   limit={C.GROSS_LIMIT} color={A.purple} t={t} a={A} trafficLight />
+              </div>
+            </div>
+
+            {/* Max Legal Fill */}
+            <div style={{ marginBottom:20, borderRadius:12, padding:"14px 16px", background: maxLegalFromCurrent<20?"rgba(255,68,68,0.1)":"rgba(250,204,21,0.08)", border:`1px solid ${maxLegalFromCurrent<20?"rgba(255,68,68,0.35)":"rgba(250,204,21,0.3)"}` }}>
+              <div style={{ fontSize:11, fontWeight:700, color: maxLegalFromCurrent<20?A.redText:A.yellowBanner, letterSpacing:0.3, marginBottom:4 }}>MAX LEGAL FILL</div>
+              <div style={{ fontSize:18, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, color:t.text }}>
+                {maxLegalFromCurrent} gal
+                <span style={{ fontSize:12, fontWeight:400, color:t.textSecondary, marginLeft:10 }}>· {Math.round(maxLegalFromCurrent * mpgNum)} mi range</span>
+              </div>
+              <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>Includes 50 lb safety buffer</div>
+            </div>
+
+            {/* Fueling mode */}
+            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
+              <div style={SL}>How Much Are You Adding?</div>
+              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                <ModeButton active={fuelMode==="manual"} label="Manual"       color={A.blue}   onClick={()=>setFuelMode("manual")} />
+                <ModeButton active={fuelMode==="full"}   label="Fill to Full" color={A.green}  onClick={()=>setFuelMode("full")} />
+                <ModeButton active={fuelMode==="safe"}   label="Max Safe"     color="#a78bfa"  onClick={()=>setFuelMode("safe")} />
+              </div>
+              {fuelMode==="manual" && (
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <label style={{ fontSize:13, color:t.textSub }}>Gallons to add</label>
+                  <input type="number" inputMode="decimal" value={gallonsToAdd} placeholder="0" onChange={e=>setGallonsToAdd(e.target.value)} style={{ width:80, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
+                </div>
+              )}
+              {fuelMode==="full" && (
+                <div style={{ background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#86efac":A.green }}>
+                  Adding <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{Math.max(0,fuelCapNum-galNowNum)} gal</strong> to reach full ({fuelCapNum} gal)
+                </div>
+              )}
+              {fuelMode==="safe" && (
+                <div style={{ background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#c4b5fd":A.purple }}>
+                  Max safe fill: <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{maxSafeGal} gal</strong>
+                  <span style={{ fontSize:10, color:t.textFaint, marginLeft:8 }}>50 lb buffer applied</span>
+                  {maxSafeGal===0 && <span style={{ color:A.redText, marginLeft:8 }}>— already at or over limit</span>}
+                </div>
+              )}
+            </div>
+
+            {/* Fuel stats */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:20 }}>
+              {[
+                { label:"Gallons Adding",   val:`${effectiveGal} gal`, color:t.text },
+                { label:"Total After Fill", val:`${totalAfter} gal`,   color:t.text },
+                { label:"Range Now",        val:`${rangeCurrent.toLocaleString()} mi`, color:A.blue },
+                { label:"Range After Fill", val:`${rangeAfter.toLocaleString()} mi`,   color:A.green },
+              ].map(({label,val,color})=>(
+                <div key={label} style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:12, padding:"12px", textAlign:"center" }}>
+                  <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
+                  <div style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{val}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Weight breakdown */}
+            {effectiveGal > 0 && (
+              <div style={{ marginBottom:20, background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"12px 16px" }}>
+                <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Weight Added Breakdown</div>
+                {[
+                  { label:"Total fuel weight",   val:`${fmt(addedWeight)} lb`,             color:t.text },
+                  { label:"→ Steer axle (20%)",  val:`+${fmt(Math.round(addedSteer))} lb`, color:A.blue },
+                  { label:"→ Drive axles (80%)", val:`+${fmt(Math.round(addedDrive))} lb`, color:A.yellow },
+                ].map(({label,val,color})=>(
+                  <div key={label} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:t.textSub, marginBottom:8 }}>
+                    <span>{label}</span><span style={{ color, fontWeight:700 }}>{val}</span>
+                  </div>
                 ))}
               </div>
             )}
+
+            {/* Liability / responsibility note */}
+            <div style={{ marginBottom:20, borderRadius:14, padding:"16px", background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", border:`1px solid ${t.border}` }}>
+              <div style={{ fontSize:10, fontWeight:700, color:t.textFaint, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Driver Responsibility</div>
+              <p style={{ margin:"0 0 8px 0", fontSize:12, color:t.textMuted, lineHeight:1.6 }}>
+                These results are estimates based on the weights you entered. Actual scale weights may differ due to load distribution, fuel burn, and equipment variation.
+              </p>
+              <p style={{ margin:0, fontSize:12, color:t.textMuted, lineHeight:1.6 }}>
+                <strong style={{ color:t.textSub }}>You are solely responsible</strong> for verifying your vehicle is legally loaded and safe to operate. The developers of MaxFuel are not liable for any violations, citations, accidents, or damages resulting from the use of this application.
+              </p>
+            </div>
+
+            {/* Reset */}
+            <div style={{ display:"flex", justifyContent:"center" }}>
+              {!resetConfirm ? (
+                <button onClick={()=>setResetConfirm(true)} style={{ fontSize:12, color:A.red, background:"transparent", border:`1px solid ${A.red}40`, borderRadius:8, padding:"8px 20px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:0.3 }}>
+                  Reset Session
+                </button>
+              ) : (
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontSize:12, color:A.red }}>Clear all session data?</span>
+                  <button onClick={doReset} style={{ fontSize:12, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Yes, clear</button>
+                  <button onClick={()=>setResetConfirm(false)} style={{ fontSize:12, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Cancel</button>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
+      )}
 
-        {/* Status banner */}
-        <div style={{ margin:"8px 16px 0", borderRadius:16, padding:"12px 24px", background: !weightsOK||!fuelOK?t.surface:safe?(isDark?"rgba(74,222,128,0.12)":"rgba(22,163,74,0.08)"):(isDark?"rgba(255,68,68,0.12)":"rgba(220,38,38,0.08)"), border:`1.5px solid ${!weightsOK||!fuelOK?t.border:safe?A.green:A.red}`, display:"flex", alignItems:"center", gap:12, boxShadow:t.shadow }}>
-          <div>
-            <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, letterSpacing:0.5, color:!weightsOK||!fuelOK?t.textSecondary:safe?A.greenBanner:A.redText }}>
-              {!weightsOK?"ENTER AXLE WEIGHTS":!fuelOK?"ENTER CURRENT FUEL":steerTooLight?"STEER TOO LIGHT":safe?"SAFE TO ROLL":"DO NOT ROLL"}
-            </div>
-            <div style={{ fontSize:12, color:t.textSecondary, marginTop:4 }}>
-              {!weightsOK||!fuelOK ? "Fill in all required fields below" :
-                steerTooLight ? <span style={{ color:A.red }}>Steer axle too light — {fmt(steerNum)} lb (min {fmt(STEER_MIN)} lb)</span> :
-                <>Gross: {fmt(newGross)} lb &nbsp;·&nbsp;<span style={{ color:grossOver?A.red:A.green }}>{grossOver?`${fmt(Math.abs(grossRem))} over limit`:`${fmt(grossRem)} under limit`}</span></>}
-            </div>
-          </div>
-        </div>
-
-        {/* Fuel to Add controls */}
-        <div style={{ padding:"8px 16px 16px" }}>
-          <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Fueling Mode</div>
-          <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-            <ModeButton active={fuelMode==="manual"} label="Manual"       color={A.blue}   onClick={()=>setFuelMode("manual")} />
-            <ModeButton active={fuelMode==="full"}   label="Fill to Full" color={A.green}  onClick={()=>setFuelMode("full")} />
-            <ModeButton active={fuelMode==="safe"}   label="Max Safe"     color="#a78bfa"  onClick={()=>setFuelMode("safe")} />
-          </div>
-          {fuelMode==="manual" && (
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-              <label style={{ fontSize:13, color:t.textSub }}>Gallons to add</label>
-              <input type="number" inputMode="decimal" value={gallonsToAdd} placeholder="0" onChange={e=>setGallonsToAdd(e.target.value)} style={{ width:80, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
-            </div>
-          )}
-          {fuelMode==="full" && (
-            <div style={{ marginBottom:8, background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#86efac":A.green }}>
-              Adding <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{Math.max(0,fuelCapNum-galNowNum)} gal</strong> to reach full ({fuelCapNum} gal)
-            </div>
-          )}
-          {fuelMode==="safe" && weightsOK && fuelOK && (
-            <div style={{ marginBottom:8, background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#c4b5fd":A.purple }}>
-              Max safe fill: <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{maxSafeGal} gal</strong>
-              <span style={{ fontSize:10, color:t.textFaint, marginLeft:8 }}>50 lb buffer applied</span>
-              {maxSafeGal===0 && <span style={{ color:A.redText, marginLeft:8 }}>— already at or over limit</span>}
-            </div>
-          )}
-          {fuelMode==="safe" && (!weightsOK||!fuelOK) && (
-            <div style={{ marginBottom:8, background:"rgba(167,139,250,0.05)", border:"1px solid rgba(167,139,250,0.15)", borderRadius:12, padding:"12px 16px", fontSize:12, color:isDark?"#7c6fa0":A.purple }}>
-              Enter axle weights and current fuel to calculate max safe fill
+      {/* ── App header ── */}
+      <div style={{ padding:"16px 16px 0", paddingTop:"max(16px, env(safe-area-inset-top))", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <h1 style={{ margin:0, fontSize:22, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, letterSpacing:-0.5, color:t.text }}>MaxFuel</h1>
+        <div style={{ position:"relative" }}>
+          <button onClick={()=>setSettingsOpen(o=>!o)} style={{ width:36, height:36, borderRadius:8, border:`1.5px solid ${settingsOpen?t.text:t.border}`, background: settingsOpen?t.surface:"transparent", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:t.textMuted, transition:"all 0.15s" }}>&#9881;</button>
+          {settingsOpen && (
+            <div style={{ position:"absolute", top:44, right:0, zIndex:200, background: isDark?"#1a1f2e":"#ffffff", border:`1px solid ${t.border}`, borderRadius:16, padding:"8px", minWidth:180, boxShadow: t.shadow }}>
+              <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1.5, padding:"4px 8px 8px" }}>Appearance</div>
+              {[["system","System"],["light","Light"],["dark","Dark"]].map(([mode,label])=>(
+                <button key={mode} onClick={()=>{ saveTheme(mode); setSettingsOpen(false); }} style={{ width:"100%", padding:"8px 12px", borderRadius:8, border:"none", background: themeMode===mode?(isDark?"rgba(255,255,255,0.1)":"rgba(0,0,0,0.07)"):"transparent", color: themeMode===mode?t.text:t.textMuted, fontSize:13, fontWeight: themeMode===mode?700:400, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", display:"flex", alignItems:"center", gap:8, textAlign:"left", transition:"background 0.15s" }}>
+                  <span>{label}</span>
+                  {themeMode===mode && <span style={{ marginLeft:"auto", fontSize:12, color:A.green, fontWeight:900 }}>&#10003;</span>}
+                </button>
+              ))}
             </div>
           )}
         </div>
       </div>
 
       {/* ── Main content ── */}
-      <div style={{ padding:"24px 16px", maxWidth:480, margin:"0 auto" }}>
+      <div style={{ padding:"16px 16px 24px", maxWidth:480, margin:"0 auto" }}>
 
         {/* ── Tab: Weights & Fuel ── */}
         {activeTab === "main" && <>
@@ -798,16 +834,14 @@ export default function App() {
               <div style={{ fontSize:11, color:t.textFaint, marginBottom:8 }}>
                 {lastSession.gallonsAdded > 0 ? `Added ${lastSession.gallonsAdded} gal` : "No fuel added"} · {lastSession.fuelMode} mode
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <button onClick={() => { setSteer(lastSession.steer); setDrives(lastSession.drives); setTrailer(lastSession.trailer); }} style={{ fontSize:12, fontWeight:600, color:A.blue, background:"transparent", border:`1px solid ${A.blue}30`, borderRadius:8, padding:"6px 12px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                  Use these weights
-                </button>
-                <span style={{ fontSize:10, color:t.textFaint }}>From last session — verify before use</span>
-              </div>
+              <button onClick={() => { setSteer(lastSession.steer); setDrives(lastSession.drives); setTrailer(lastSession.trailer); }} style={{ fontSize:12, fontWeight:600, color:A.blue, background:"transparent", border:`1px solid ${A.blue}30`, borderRadius:8, padding:"6px 12px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                Use these weights
+              </button>
+              <span style={{ fontSize:10, color:t.textFaint, marginLeft:8 }}>Verify before use</span>
             </div>
           )}
 
-          {/* Progressive estimate banner */}
+          {/* Progressive estimate */}
           {!weightsOK && estLevel > 0 && (
             <div style={{ marginBottom:16, borderRadius:12, padding:"12px 16px", background: isDark?"rgba(107,114,128,0.06)":"rgba(107,114,128,0.05)", border:`1px solid ${t.border}` }}>
               <div style={{ fontSize:11, fontWeight:700, color:t.textMuted, letterSpacing:0.5 }}>
@@ -822,26 +856,12 @@ export default function App() {
             </div>
           )}
 
-          {/* Max Legal Fuel */}
-          {weightsOK && fuelOK && (
-            <div style={{ marginBottom:16, borderRadius:12, padding:"12px 16px", background: maxLegalFromCurrent<20?"rgba(255,68,68,0.1)":"rgba(250,204,21,0.08)", border:`1px solid ${maxLegalFromCurrent<20?"rgba(255,68,68,0.35)":"rgba(250,204,21,0.3)"}`, display:"flex", alignItems:"center", gap:8 }}>
-              <div>
-                <div style={{ fontSize:12, fontWeight:700, color: maxLegalFromCurrent<20?A.redText:A.yellowBanner, letterSpacing:0.3 }}>MAX LEGAL FILL</div>
-                <div style={{ fontSize:15, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, color:t.text }}>
-                  {maxLegalFromCurrent} gal
-                  <span style={{ fontSize:11, fontWeight:400, color:t.textSecondary, marginLeft:8 }}>({maxLegalFromCurrent * C.DIESEL_LB_PER_GAL} lb · {Math.round(maxLegalFromCurrent * mpgNum)} mi range)</span>
-                </div>
-                <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>Includes 50 lb safety buffer</div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Axle Weights input ── */}
-          <div style={{ marginBottom:24 }}>
+          {/* Axle weights */}
+          <div style={{ marginBottom:16 }}>
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
               <div style={{ padding:"16px" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                  <span style={{ fontSize:12, color:t.textSub, fontWeight:600 }}>Current Axle Weights</span>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <span style={{ fontSize:13, fontWeight:700, color:t.textSub }}>Axle Weights</span>
                   <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
@@ -858,188 +878,120 @@ export default function App() {
                         <input {...inp(val, set, "—")} />
                         <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>lb</div>
                       </div>
-                      {warn && (
-                        <div style={{ fontSize:9, color:A.yellow, marginTop:4, lineHeight:1.4, textAlign:"center", padding:"0 2px" }}>{warnText}</div>
-                      )}
+                      {warn && <div style={{ fontSize:9, color:A.yellow, marginTop:4, lineHeight:1.4, textAlign:"center", padding:"0 2px" }}>{warnText}</div>}
                     </div>
                   ))}
                 </div>
                 {!weightsOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75, textAlign:"center" }}>All three weights required to calculate</div>}
               </div>
             </div>
+
+            {/* Test scenario buttons */}
+            <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:8 }}>
+              <span style={{ fontSize:10, color:t.textFaint, whiteSpace:"nowrap", letterSpacing:0.5 }}>Test:</span>
+              {[
+                { label:"Light",     color:"#4ade80", steer:"11000", drives:"30000", trailer:"26000", fuel:"60" },
+                { label:"Heavy",     color:"#facc15", steer:"11800", drives:"32800", trailer:"32000", fuel:"60" },
+                { label:"Over Limit",color:"#ff4444", steer:"11900", drives:"34800", trailer:"33600", fuel:"60" },
+              ].map(({ label, color, steer: s, drives: d, trailer: tr, fuel: f }) => (
+                <button key={label}
+                  onClick={() => { setSteer(s); setDrives(d); setTrailer(tr); setGallonsNow(f); }}
+                  style={{ fontSize:10, fontWeight:700, color, background:"transparent",
+                    border:`1px solid ${color}40`, borderRadius:99, padding:"4px 10px",
+                    cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:0.3,
+                    transition:"all 0.15s" }}>
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* ── Fuel Section ── */}
-          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:24, boxShadow:t.shadow }}>
-            <div style={SL}>Fuel</div>
+          {/* Fuel level */}
+          <div style={{ background:t.surface, border:`1px solid ${gallonsNow===""?"rgba(239,68,68,0.35)":t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+              <span style={{ fontSize:13, fontWeight:700, color:gallonsNow===""?"#ef4444":t.textSub }}>
+                Current Fuel Level{gallonsNow===""?" *":""}
+              </span>
+              <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
+            </div>
 
             {/* Scaling notice */}
             <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.06)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.18)":"rgba(217,119,6,0.2)"}`, borderRadius:10, padding:"10px 12px", display:"flex", gap:8, alignItems:"flex-start" }}>
               <span style={{ fontSize:13, flexShrink:0, lineHeight:1 }}>💡</span>
-              <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.5 }}>
-                For best accuracy, record your fuel level at the scale — or fuel immediately after weighing.
-              </span>
+              <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.5 }}>For best accuracy, record your fuel level at the scale — or fuel immediately after weighing.</span>
             </div>
 
-            <div style={{ background:gallonsNow===""?"rgba(239,68,68,0.07)":t.surface, border:`1px solid ${gallonsNow===""?"rgba(239,68,68,0.35)":t.border}`, borderRadius:12, padding:"12px 16px", marginBottom:16 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                <span style={{ fontSize:13, color:gallonsNow===""?"#ef4444":t.textSub, fontWeight:600 }}>Gallons Currently in Tanks{gallonsNow===""?" *":""}</span>
-                <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
-              </div>
-
-              {/* Semicircle fuel gauge */}
-              {(() => {
-                const fraction = gallonsNow === "" ? 0 : Math.min(galNowNum / fuelCapNum, 1);
-                const hasValue = gallonsNow !== "";
-                const fuelLow = fraction < 0.13;
-                const fuelMed = fraction < 0.26;
-                const gaugeColor = fuelLow ? "#ff4444" : fuelMed ? "#facc15" : A.green;
-
-                // Quick-select tick buttons: E ⅛ ¼ ⅜ ½ ⅝ ¾ ⅞ F
-                const ticks = [0,1,2,3,4,5,6,7,8];
-                const labels = ["E","⅛","¼","⅜","½","⅝","¾","⅞","F"];
-                const sliderVal = !hasValue ? -1 : Math.round(fraction * 8);
-
-                return (
-                  <div style={{ marginBottom:8 }}>
-                    <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark} />
-                    {hasValue && (
-                      <div style={{ textAlign:"center", marginTop:4, marginBottom:8 }}>
-                        <span style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:gaugeColor }}>
-                          {galNowNum === 0 ? "EMPTY" : galNowNum >= fuelCapNum ? "FULL" : `${galNowNum} gal`}
-                        </span>
-                        {galNowNum > 0 && galNowNum < fuelCapNum && (
-                          <span style={{ fontSize:12, color:t.textSecondary, marginLeft:8 }}>
-                            ({Math.round(fraction * 100)}%)
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    {!hasValue && (
-                      <div style={{ textAlign:"center", marginBottom:8 }}>
-                        <span style={{ fontSize:13, color:t.textFaint, fontStyle:"italic" }}>tap below to set level</span>
-                      </div>
-                    )}
-                    {/* Quick-select buttons */}
-                    <div style={{ display:"flex", gap:4, marginBottom:4 }}>
-                      {ticks.map(i => (
-                        <button key={i}
-                          onClick={() => setGallonsNow(String(Math.round((i/8)*fuelCapNum)))}
-                          style={{ flex:1, height:28, borderRadius:8, cursor:"pointer",
-                            border: sliderVal===i ? `1.5px solid ${gaugeColor}` : `1px solid ${t.border}`,
-                            background: sliderVal===i ? (isDark?`${gaugeColor}30`:`${gaugeColor}20`) : (isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)"),
-                            transition:"all 0.15s", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                          <span style={{ fontSize:9, fontWeight:700, color:sliderVal===i?gaugeColor:t.textFaint, fontFamily:"'DM Sans',sans-serif" }}>{labels[i]}</span>
-                        </button>
-                      ))}
+            {(() => {
+              const fraction = gallonsNow === "" ? 0 : Math.min(galNowNum / fuelCapNum, 1);
+              const hasValue = gallonsNow !== "";
+              const fuelLow = fraction < 0.13;
+              const fuelMed = fraction < 0.26;
+              const gaugeColor = fuelLow ? "#ff4444" : fuelMed ? "#facc15" : A.green;
+              const ticks = [0,1,2,3,4,5,6,7,8];
+              const labels = ["E","⅛","¼","⅜","½","⅝","¾","⅞","F"];
+              const sliderVal = !hasValue ? -1 : Math.round(fraction * 8);
+              return (
+                <div style={{ marginBottom:8 }}>
+                  <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark} />
+                  {hasValue ? (
+                    <div style={{ textAlign:"center", marginTop:4, marginBottom:8 }}>
+                      <span style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:gaugeColor }}>
+                        {galNowNum === 0 ? "EMPTY" : galNowNum >= fuelCapNum ? "FULL" : `${galNowNum} gal`}
+                      </span>
+                      {galNowNum > 0 && galNowNum < fuelCapNum && (
+                        <span style={{ fontSize:12, color:t.textSecondary, marginLeft:8 }}>({Math.round(fraction * 100)}%)</span>
+                      )}
                     </div>
+                  ) : (
+                    <div style={{ textAlign:"center", marginBottom:8 }}>
+                      <span style={{ fontSize:13, color:t.textFaint, fontStyle:"italic" }}>tap below to set level</span>
+                    </div>
+                  )}
+                  <div style={{ display:"flex", gap:4, marginBottom:4 }}>
+                    {ticks.map(i => (
+                      <button key={i} onClick={()=>setGallonsNow(String(Math.round((i/8)*fuelCapNum)))}
+                        style={{ flex:1, height:28, borderRadius:8, cursor:"pointer",
+                          border: sliderVal===i ? `1.5px solid ${gaugeColor}` : `1px solid ${t.border}`,
+                          background: sliderVal===i ? (isDark?`${gaugeColor}30`:`${gaugeColor}20`) : (isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)"),
+                          transition:"all 0.15s", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                        <span style={{ fontSize:9, fontWeight:700, color:sliderVal===i?gaugeColor:t.textFaint, fontFamily:"'DM Sans',sans-serif" }}>{labels[i]}</span>
+                      </button>
+                    ))}
                   </div>
-                );
-              })()}
-
-              <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:8, borderTop:`1px solid ${t.divider}` }}>
-                <span style={{ fontSize:11, color:t.textSecondary, whiteSpace:"nowrap" }}>Or enter exact:</span>
-                <input type="number" inputMode="decimal" value={gallonsNow} placeholder="—" onChange={e=>setGallonsNow(e.target.value)} style={{ flex:1, minWidth:0, background:"transparent", border:"none", borderBottom:`1.5px solid ${gallonsNow===""?"rgba(239,68,68,0.4)":t.borderStrong}`, color:gallonsNow===""?"#888":t.text, fontSize:20, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", outline:"none", padding:"4px 0", textAlign:"right" }} />
-                <span style={{ fontSize:12, color:t.textFaint, fontWeight:600 }}>gal</span>
-              </div>
-              {!fuelOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75 }}>Current fuel level required to calculate</div>}
-            </div>
-
-            {/* Fuel stats */}
-            <div style={{ paddingTop:16, borderTop:`1px solid ${t.divider}`, display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-              {[
-                { label:"Gallons Adding",   val:`${effectiveGal} gal`,                           color:t.text },
-                { label:"Total After Fill", val:`${totalAfter} gal`,                             color:t.text },
-                { label:"Range Now",        val:fuelOK?`${rangeCurrent.toLocaleString()} mi`:"—", color:A.blue },
-                { label:"Range After Fill", val:fuelOK?`${rangeAfter.toLocaleString()} mi`:"—",   color:A.green },
-              ].map(({label,val,color})=>(
-                <div key={label} style={{ background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", borderRadius:12, padding:"12px", textAlign:"center" }}>
-                  <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
-                  <div style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{val}</div>
                 </div>
-              ))}
+              );
+            })()}
+
+            <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:8, borderTop:`1px solid ${t.divider}` }}>
+              <span style={{ fontSize:11, color:t.textSecondary, whiteSpace:"nowrap" }}>Or enter exact:</span>
+              <input type="number" inputMode="decimal" value={gallonsNow} placeholder="—" onChange={e=>setGallonsNow(e.target.value)} style={{ flex:1, minWidth:0, background:"transparent", border:"none", borderBottom:`1.5px solid ${gallonsNow===""?"rgba(239,68,68,0.4)":t.borderStrong}`, color:gallonsNow===""?"#888":t.text, fontSize:20, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", outline:"none", padding:"4px 0", textAlign:"right" }} />
+              <span style={{ fontSize:12, color:t.textFaint, fontWeight:600 }}>gal</span>
             </div>
+            {!fuelOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75 }}>Current fuel level required to calculate</div>}
           </div>
 
-          {/* ── Axle Results ── */}
-          {weightsOK && fuelOK ? (
-            <div style={{ marginBottom:16 }}>
-              <div style={SL}>Axle Weights After Fueling</div>
-              <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                <AxleCard label="Steer"  current={Math.round(newSteer)}  limit={C.STEER_LIMIT} color={A.blue}   t={t} a={A} trafficLight minVal={STEER_MIN} />
-                <AxleCard label="Drives" current={Math.round(newDrives)} limit={C.DRIVE_LIMIT} color={A.yellow} t={t} a={A} trafficLight />
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                <AxleCard label="Trailer" current={Math.round(newTrailer)} limit={trailerLim}    color={A.orange} t={t} a={A} trafficLight />
-                <AxleCard label="Gross"   current={Math.round(newGross)}   limit={C.GROSS_LIMIT} color={A.purple} t={t} a={A} trafficLight />
-              </div>
-            </div>
-          ) : (
-            <div style={{ marginBottom:16 }}>
-              <div style={{ ...SL, opacity:0.5 }}>Axle Weights After Fueling</div>
-              <div style={{ display:"flex", gap:8, marginBottom:8 }}>
-                {["Steer","Drives"].map(lbl => (
-                  <div key={lbl} style={{ flex:1, minWidth:0, borderRadius:16, border:`1.5px dashed ${t.border}`, height:140, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, opacity:0.45 }}>
-                    <div style={{ width:40, height:4, borderRadius:99, background:t.border }} />
-                    <div style={{ width:56, height:20, borderRadius:8, background:t.border }} />
-                    <div style={{ width:32, height:4, borderRadius:99, background:t.border }} />
-                  </div>
-                ))}
-              </div>
-              <div style={{ display:"flex", gap:8 }}>
-                {["Trailer","Gross"].map(lbl => (
-                  <div key={lbl} style={{ flex:1, minWidth:0, borderRadius:16, border:`1.5px dashed ${t.border}`, height:140, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:6, opacity:0.45 }}>
-                    <div style={{ width:40, height:4, borderRadius:99, background:t.border }} />
-                    <div style={{ width:56, height:20, borderRadius:8, background:t.border }} />
-                    <div style={{ width:32, height:4, borderRadius:99, background:t.border }} />
-                  </div>
-                ))}
-              </div>
-              <div style={{ textAlign:"center", marginTop:12, fontSize:12, color:t.textFaint }}>
-                Your axle weights and compliance status will appear here
-              </div>
-            </div>
-          )}
-
-          {/* Weight breakdown */}
-          {weightsOK && fuelOK && effectiveGal > 0 && (
-            <div style={{ marginBottom:24, background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"12px 16px" }}>
-              <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:8 }}>Weight Added Breakdown</div>
-              {[
-                { label:"Total fuel weight",   val:`${fmt(addedWeight)} lb`,             color:t.text },
-                { label:"→ Steer axle (20%)",  val:`+${fmt(Math.round(addedSteer))} lb`, color:A.blue },
-                { label:"→ Drive axles (80%)", val:`+${fmt(Math.round(addedDrive))} lb`, color:A.yellow },
-              ].map(({label,val,color})=>(
-                <div key={label} style={{ display:"flex", justifyContent:"space-between", fontSize:13, color:t.textSub, marginBottom:8 }}>
-                  <span>{label}</span><span style={{ color, fontWeight:700 }}>{val}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Reset Session */}
-          {(weightsOK || fuelOK) && (
-            <div style={{ display:"flex", justifyContent:"center", marginBottom:16 }}>
-              {!resetConfirm ? (
-                <button onClick={()=>setResetConfirm(true)} style={{ fontSize:12, color:A.red, background:"transparent", border:`1px solid ${A.red}40`, borderRadius:8, padding:"8px 20px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:0.3 }}>
-                  Reset Session
-                </button>
-              ) : (
-                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontSize:12, color:A.red }}>Clear all session data?</span>
-                  <button onClick={doReset} style={{ fontSize:12, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Yes, clear</button>
-                  <button onClick={()=>setResetConfirm(false)} style={{ fontSize:12, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Cancel</button>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Calculate button */}
+          <button
+            onClick={() => readyToCalculate && setResultsOpen(true)}
+            disabled={!readyToCalculate}
+            style={{
+              width:"100%", padding:"18px", borderRadius:16, border:"none",
+              background: readyToCalculate ? A.green : t.border,
+              color: readyToCalculate ? (isDark?"#0d1a0f":"#fff") : t.textFaint,
+              fontSize:17, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif",
+              letterSpacing:0.5, cursor: readyToCalculate ? "pointer" : "not-allowed",
+              boxShadow: readyToCalculate ? `0 4px 20px ${A.green}40` : "none",
+              transition:"all 0.25s",
+            }}
+          >
+            {!weightsOK ? "ENTER AXLE WEIGHTS TO CONTINUE" : !fuelOK ? "ENTER FUEL LEVEL TO CONTINUE" : "CALCULATE →"}
+          </button>
 
         </> /* end main tab */}
 
         {/* ── Tab: Truck ── */}
         {activeTab === "truck" && <>
 
-          {/* Profile management */}
           <div style={{ marginBottom:24 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <div style={SL}>Truck Profile</div>
@@ -1072,14 +1024,12 @@ export default function App() {
             </div>
           </div>
 
-          {/* Trailer type */}
           <div style={{ marginBottom:24 }}>
             <div style={SL}>Trailer Type</div>
             <div style={{ display:"flex", flexWrap:"wrap", gap:8 }}>
               {trailerTypes.map(type => (
                 <button key={type} onClick={()=>setTrailerType(type)}
-                  style={{ padding:"8px 14px", borderRadius:99, fontSize:12, fontWeight:700,
-                    fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all 0.15s",
+                  style={{ padding:"8px 14px", borderRadius:99, fontSize:12, fontWeight:700, fontFamily:"'DM Sans',sans-serif", cursor:"pointer", transition:"all 0.15s",
                     border: trailerType===type ? `1.5px solid ${A.blue}` : `1px solid ${t.border}`,
                     background: trailerType===type ? (isDark?`${A.blue}20`:`${A.blue}15`) : "transparent",
                     color: trailerType===type ? A.blue : t.textMuted }}>
@@ -1089,28 +1039,20 @@ export default function App() {
             </div>
           </div>
 
-          {/* Axle type + settings */}
           <div style={{ marginBottom:24 }}>
             <div style={SL}>Axle &amp; Tank Settings</div>
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
-
-              {/* Trailer Axle Type */}
               <div style={{ padding:"12px 16px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }} onClick={()=>setSpreadAxle(!spreadAxle)}>
                 <div>
                   <div style={{ fontSize:13, color:t.textSub, fontWeight:600 }}>Trailer Axle Type</div>
                   <div style={{ fontSize:11, color:t.textSecondary, marginTop:2 }}>
                     Limit: <span style={{ color:spreadAxle?A.orange:A.yellow, fontWeight:700 }}>{spreadAxle?"40,000 lb — spread":"34,000 lb — tandem"}</span>
                   </div>
-                  {spreadAxle && (
-                    <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>Tandem Slider tab is hidden for spread axle</div>
-                  )}
+                  {spreadAxle && <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>Tandem Slider tab is hidden for spread axle</div>}
                 </div>
                 <Toggle on={spreadAxle} leftLabel="TANDEM" rightLabel="SPREAD" onColor={A.orange} t={t} />
               </div>
-
               <Divider t={t} />
-
-              {/* Tank & MPG */}
               <div style={{ padding:"16px", display:"flex", flexDirection:"column", gap:16 }}>
                 <SettingRow label="Tank Capacity" sub="gallons" value={fuelCapacity} onChange={setFuelCapacity} placeholder="150" t={t} />
                 <SettingRow label="Avg Fuel Economy" sub="miles per gallon" value={mpg} onChange={setMpg} placeholder="7.5" t={t} />
@@ -1119,7 +1061,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Hole spacing */}
           {!spreadAxle && (
             <div style={{ marginBottom:24 }}>
               <div style={SL}>Tandem Hole Spacing</div>
@@ -1133,13 +1074,7 @@ export default function App() {
               </div>
             </div>
           )}
-          {spreadAxle && (
-            <div style={{ marginBottom:24, background:t.surface, border:`1px solid ${t.border}`, borderRadius:12, padding:"12px 16px" }}>
-              <div style={{ fontSize:12, color:t.textFaint }}>Hole spacing is only relevant for tandem axle configurations.</div>
-            </div>
-          )}
 
-          {/* Summary footer */}
           <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:16 }}>
             <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:12 }}>Current Settings</div>
             {[
@@ -1173,7 +1108,6 @@ export default function App() {
             <div style={SL}>Tandem Slider</div>
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
 
-              {/* Slide goal */}
               <div style={{ padding:"16px" }}>
                 <div style={{ fontSize:12, color:t.textSub, fontWeight:600, marginBottom:8 }}>Goal</div>
                 <div style={{ display:"flex", gap:8 }}>
@@ -1189,7 +1123,6 @@ export default function App() {
 
               <Divider t={t} />
 
-              {/* Current hole position */}
               <div style={{ padding:"16px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
                   <div>
@@ -1237,7 +1170,6 @@ export default function App() {
 
               <Divider t={t} />
 
-              {/* Result */}
               <div ref={sliderResultRef} style={{ padding:"16px" }}>
                 {!weightsOK ? (
                   <div style={{ fontSize:12, color:t.textFaint, textAlign:"center", padding:"8px 0" }}>Enter axle weights on the Weights &amp; Fuel tab to calculate slide recommendation</div>
@@ -1284,7 +1216,7 @@ export default function App() {
 
         </> /* end slider tab */}
 
-        {/* Footer — always visible */}
+        {/* Footer */}
         <div style={{ borderTop:`1px solid ${t.divider}`, marginTop:16, paddingTop:12, display:"flex", justifyContent:"space-around" }}>
           {[
             ["Diesel","8 lb/gal"],
@@ -1301,7 +1233,7 @@ export default function App() {
 
       </div>
 
-      {/* ── Save Profile Modal ── */}
+      {/* Save Profile Modal */}
       {showSavePrompt && (
         <>
           <div onClick={()=>{ setShowSavePrompt(false); setIsOnboardingProfile(false); }} style={{ position:"fixed", inset:0, zIndex:1000, background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }} />
@@ -1314,8 +1246,7 @@ export default function App() {
                 Saves trailer type, tank capacity, fuel economy, axle config, hole spacing, and steer minimum.
               </div>
               <div style={{ fontSize:11, color:t.textSecondary, marginBottom:8 }}>Profile name</div>
-              <input
-                type="text" value={newProfileName}
+              <input type="text" value={newProfileName}
                 placeholder={isOnboardingProfile ? "My Truck" : "e.g. Pete 389 — 53ft Spread"}
                 onChange={e=>setNewProfileName(e.target.value)}
                 onKeyDown={e=>e.key==="Enter"&&saveProfile()}
@@ -1333,7 +1264,7 @@ export default function App() {
         </>
       )}
 
-      {/* ── Bottom Tab Bar ── */}
+      {/* Bottom Tab Bar */}
       <div style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:50, background:isDark?"rgba(10,15,30,0.95)":"rgba(255,255,255,0.95)", backdropFilter:"blur(12px)", borderTop:`1px solid ${t.border}`, display:"flex", paddingBottom:"env(safe-area-inset-bottom)" }}>
         {tabs.map(({ id, label, badge }) => {
           const active = activeTab === id;
