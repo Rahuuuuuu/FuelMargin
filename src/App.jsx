@@ -601,7 +601,7 @@ export default function App() {
     {
       step: 2,
       title: "Check your fuel",
-      body: "Enter your current fuel level using the gauge or type it in. RollSafe will tell you the maximum you can safely add.",
+      body: "Enter your current fuel level using the gauge or type it in. MaxFuel will tell you the maximum you can safely add.",
       icon: "⛽",
     },
     {
@@ -707,7 +707,7 @@ export default function App() {
         {/* Title row + settings gear */}
         <div style={{ padding:"8px 16px 0", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <h1 style={{ margin:0, fontSize:20, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, letterSpacing:-0.5, color:t.text }}>
-            Fuel / Axle Weight Calculator
+            MaxFuel
           </h1>
           <div style={{ position:"relative" }}>
             <button onClick={()=>setSettingsOpen(o=>!o)} style={{ width:36, height:36, borderRadius:8, border:`1.5px solid ${settingsOpen?t.text:t.border}`, background: settingsOpen?t.surface:"transparent", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:t.textMuted, transition:"all 0.15s" }}>&#9881;</button>
