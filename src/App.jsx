@@ -787,7 +787,7 @@ export default function App() {
             position:"absolute", bottom:0, left:0, right:0, zIndex:20,
             background: isDark?"rgba(10,15,30,0.97)":"rgba(240,244,240,0.97)",
             backdropFilter:"blur(12px)",
-            borderTop:`1px solid ${isDark?"rgba(250,204,21,0.2)":"rgba(217,119,6,0.25)"}`,
+            borderTop:`1px solid ${isDark?"rgba(255,68,68,0.3)":"rgba(220,38,38,0.25)"}`,
             transition:"all 0.3s cubic-bezier(.4,0,.2,1)",
           }}>
             {/* Tap handle / collapsed bar */}
@@ -796,7 +796,7 @@ export default function App() {
               style={{ width:"100%", padding:"12px 20px", background:"transparent", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
               <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ fontSize:13 }}>⚠️</span>
-                <span style={{ fontSize:11, fontWeight:700, color:isDark?"rgba(250,204,21,0.8)":"#b45309", letterSpacing:0.5, fontFamily:"'DM Sans',sans-serif" }}>
+                <span style={{ fontSize:11, fontWeight:700, color:isDark?"#ff6b6b":"#dc2626", letterSpacing:0.5, fontFamily:"'DM Sans',sans-serif" }}>
                   Driver Responsibility
                 </span>
               </div>
@@ -806,7 +806,7 @@ export default function App() {
             {/* Expanded content */}
             {warningExpanded && (
               <div style={{ padding:"0 20px 20px", maxWidth:480, margin:"0 auto" }}>
-                <div style={{ height:1, background:isDark?"rgba(250,204,21,0.12)":"rgba(217,119,6,0.15)", marginBottom:14 }} />
+                <div style={{ height:1, background:isDark?"rgba(255,68,68,0.2)":"rgba(220,38,38,0.15)", marginBottom:14 }} />
                 <p style={{ margin:"0 0 10px 0", fontSize:12, color:t.textMuted, lineHeight:1.65 }}>
                   These results are estimates based on the weights you entered. Actual scale weights may differ due to load distribution, fuel burn, and equipment variation.
                 </p>
