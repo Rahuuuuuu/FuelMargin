@@ -279,6 +279,7 @@ export default function App() {
   const [disclaimerAccepted, setDisclaimerAccepted] = useState(() => ls.get("qf_disclaimer_accepted", false));
   const [disclaimerChecked, setDisclaimerChecked] = useState(false);
   const [resultsOpen, setResultsOpen] = useState(false);
+  const [warningExpanded, setWarningExpanded] = useState(false);
 
   const [orientationComplete, setOrientationComplete] = useState(() => ls.get("qf_orientation_complete", false));
   const [orientationStep, setOrientationStep] = useState(1);
@@ -654,7 +655,10 @@ export default function App() {
 
       {/* ── Results overlay ── */}
       {resultsOpen && (
-        <div style={{ position:"fixed", inset:0, zIndex:200, background: isDark?"#0a0f1e":"#f0f4f0", overflowY:"auto", paddingBottom:40 }}>
+        <div style={{ position:"fixed", inset:0, zIndex:200, background: isDark?"#0a0f1e":"#f0f4f0" }}>
+          {/* Scrollable content area — padded so warning bar never hides content */}
+          <div style={{ position:"absolute", inset:0, overflowY:"auto", paddingBottom: warningExpanded ? 220 : 56 }}>
+
           {/* Overlay header */}
           <div style={{ position:"sticky", top:0, zIndex:10, background: isDark?"rgba(10,15,30,0.97)":"rgba(240,244,240,0.97)", backdropFilter:"blur(12px)", borderBottom:`1px solid ${t.border}`, padding:"16px 20px", paddingTop:"max(16px, env(safe-area-inset-top))", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
             <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:18, fontWeight:800, color:t.text, letterSpacing:0.3 }}>Results</div>
@@ -760,17 +764,6 @@ export default function App() {
               </div>
             )}
 
-            {/* Liability / responsibility note */}
-            <div style={{ marginBottom:20, borderRadius:14, padding:"16px", background:isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", border:`1px solid ${t.border}` }}>
-              <div style={{ fontSize:10, fontWeight:700, color:t.textFaint, letterSpacing:1.5, textTransform:"uppercase", marginBottom:8 }}>Driver Responsibility</div>
-              <p style={{ margin:"0 0 8px 0", fontSize:12, color:t.textMuted, lineHeight:1.6 }}>
-                These results are estimates based on the weights you entered. Actual scale weights may differ due to load distribution, fuel burn, and equipment variation.
-              </p>
-              <p style={{ margin:0, fontSize:12, color:t.textMuted, lineHeight:1.6 }}>
-                <strong style={{ color:t.textSub }}>You are solely responsible</strong> for verifying your vehicle is legally loaded and safe to operate. The developers of MaxFuel are not liable for any violations, citations, accidents, or damages resulting from the use of this application.
-              </p>
-            </div>
-
             {/* Reset */}
             <div style={{ display:"flex", justifyContent:"center" }}>
               {!resetConfirm ? (
@@ -787,6 +780,43 @@ export default function App() {
             </div>
 
           </div>
+          </div>{/* end scrollable content */}
+
+          {/* ── Collapsible warning strip — sticky bottom of overlay ── */}
+          <div style={{
+            position:"absolute", bottom:0, left:0, right:0, zIndex:20,
+            background: isDark?"rgba(10,15,30,0.97)":"rgba(240,244,240,0.97)",
+            backdropFilter:"blur(12px)",
+            borderTop:`1px solid ${isDark?"rgba(250,204,21,0.2)":"rgba(217,119,6,0.25)"}`,
+            transition:"all 0.3s cubic-bezier(.4,0,.2,1)",
+          }}>
+            {/* Tap handle / collapsed bar */}
+            <button
+              onClick={()=>setWarningExpanded(v=>!v)}
+              style={{ width:"100%", padding:"12px 20px", background:"transparent", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontSize:13 }}>⚠️</span>
+                <span style={{ fontSize:11, fontWeight:700, color:isDark?"rgba(250,204,21,0.8)":"#b45309", letterSpacing:0.5, fontFamily:"'DM Sans',sans-serif" }}>
+                  Driver Responsibility
+                </span>
+              </div>
+              <span style={{ fontSize:11, color:t.textFaint, transition:"transform 0.3s", display:"inline-block", transform: warningExpanded?"rotate(180deg)":"rotate(0deg)" }}>▲</span>
+            </button>
+
+            {/* Expanded content */}
+            {warningExpanded && (
+              <div style={{ padding:"0 20px 20px", maxWidth:480, margin:"0 auto" }}>
+                <div style={{ height:1, background:isDark?"rgba(250,204,21,0.12)":"rgba(217,119,6,0.15)", marginBottom:14 }} />
+                <p style={{ margin:"0 0 10px 0", fontSize:12, color:t.textMuted, lineHeight:1.65 }}>
+                  These results are estimates based on the weights you entered. Actual scale weights may differ due to load distribution, fuel burn, and equipment variation.
+                </p>
+                <p style={{ margin:0, fontSize:12, color:t.textMuted, lineHeight:1.65 }}>
+                  <strong style={{ color:t.textSub }}>You are solely responsible</strong> for verifying your vehicle is legally loaded and safe to operate. The developers of MaxFuel are not liable for any violations, citations, accidents, or damages resulting from the use of this application.
+                </p>
+              </div>
+            )}
+          </div>
+
         </div>
       )}
 
