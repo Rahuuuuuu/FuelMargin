@@ -845,31 +845,6 @@ export default function App() {
         {/* ── Tab: Weights & Fuel ── */}
         {activeTab === "main" && <>
 
-          {/* Last Stop card */}
-          {lastSession && (
-            <div style={{ marginBottom:16, background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"12px 16px", opacity:0.9 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:10 }}>
-                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:14, fontWeight:700, color:t.textSub }}>Last Stop</div>
-                <div style={{ fontSize:10, color:t.textFaint, fontFamily:"'Space Mono',monospace" }}>{fmtTs(lastSession.ts)}</div>
-              </div>
-              <div style={{ display:"flex", gap:8, marginBottom:10 }}>
-                {[["Steer", lastSession.steer],["Drives", lastSession.drives],["Trailer", lastSession.trailer]].map(([lbl, val]) => (
-                  <div key={lbl} style={{ flex:1, textAlign:"center", background: isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)", borderRadius:8, padding:"6px 4px" }}>
-                    <div style={{ fontSize:9, color:t.textFaint, textTransform:"uppercase", letterSpacing:1 }}>{lbl}</div>
-                    <div style={{ fontSize:13, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", color:t.textSub }}>{val ? fmt(Number(val)) : "—"}</div>
-                    <div style={{ fontSize:9, color:t.textFaint }}>lb</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontSize:11, color:t.textFaint, marginBottom:8 }}>
-                {lastSession.gallonsAdded > 0 ? `Added ${lastSession.gallonsAdded} gal` : "No fuel added"} · {lastSession.fuelMode} mode
-              </div>
-              <button onClick={() => { setSteer(lastSession.steer); setDrives(lastSession.drives); setTrailer(lastSession.trailer); }} style={{ fontSize:12, fontWeight:600, color:A.blue, background:"transparent", border:`1px solid ${A.blue}30`, borderRadius:8, padding:"6px 12px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                Use these weights
-              </button>
-              <span style={{ fontSize:10, color:t.textFaint, marginLeft:8 }}>Verify before use</span>
-            </div>
-          )}
 
           {/* Progressive estimate */}
           {!weightsOK && estLevel > 0 && (
@@ -921,7 +896,7 @@ export default function App() {
               <span style={{ fontSize:10, color:t.textFaint, whiteSpace:"nowrap", letterSpacing:0.5 }}>Test:</span>
               {[
                 { label:"Light",     color:"#4ade80", steer:"11000", drives:"30000", trailer:"26000", fuel:"60" },
-                { label:"Heavy",     color:"#facc15", steer:"11800", drives:"32800", trailer:"32000", fuel:"60" },
+                { label:"Heavy",     color:"#facc15", steer:"11900", drives:"33900", trailer:"33900", fuel:"60" },
                 { label:"Over Limit",color:"#ff4444", steer:"11900", drives:"34800", trailer:"33600", fuel:"60" },
               ].map(({ label, color, steer: s, drives: d, trailer: tr, fuel: f }) => (
                 <button key={label}
