@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/MaxFuel/static/js/main.8ea1a55e.js",
+    "main.js": "/MaxFuel/static/js/main.dd81d4a9.js",
     "index.html": "/MaxFuel/index.html",
-    "main.8ea1a55e.js.map": "/MaxFuel/static/js/main.8ea1a55e.js.map"
+    "main.dd81d4a9.js.map": "/MaxFuel/static/js/main.dd81d4a9.js.map"
   },
   "entrypoints": [
-    "static/js/main.8ea1a55e.js"
+    "static/js/main.dd81d4a9.js"
   ]
 }
