@@ -878,7 +878,11 @@ export default function App() {
                         <div style={{ fontSize:10, color:val===""?"#ef4444":t.textSecondary, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>
                           {label}{val===""?" *":""}
                         </div>
-                        <input {...inp(val, set, "—")} />
+                        <input {...inp(val, set, "—")} onBlur={label==="Steer" ? () => {
+                          if (val==="77777") { setSteer("11000"); setDrives("30000"); setTrailer("26000"); setGallonsNow("60"); }
+                          else if (val==="88888") { setSteer("11900"); setDrives("33900"); setTrailer("33900"); setGallonsNow("60"); }
+                          else if (val==="99999") { setSteer("11900"); setDrives("34800"); setTrailer("33600"); setGallonsNow("60"); }
+                        } : undefined} />
                         <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>lb</div>
                       </div>
                       {warn && <div style={{ fontSize:9, color:A.yellow, marginTop:4, lineHeight:1.4, textAlign:"center", padding:"0 2px" }}>{warnText}</div>}
@@ -889,24 +893,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Test scenario buttons */}
-            <div style={{ marginTop:10, display:"flex", alignItems:"center", gap:8 }}>
-              <span style={{ fontSize:10, color:t.textFaint, whiteSpace:"nowrap", letterSpacing:0.5 }}>Test:</span>
-              {[
-                { label:"Light",     color:"#4ade80", steer:"11000", drives:"30000", trailer:"26000", fuel:"60" },
-                { label:"Heavy",     color:"#facc15", steer:"11900", drives:"33900", trailer:"33900", fuel:"60" },
-                { label:"Over Limit",color:"#ff4444", steer:"11900", drives:"34800", trailer:"33600", fuel:"60" },
-              ].map(({ label, color, steer: s, drives: d, trailer: tr, fuel: f }) => (
-                <button key={label}
-                  onClick={() => { setSteer(s); setDrives(d); setTrailer(tr); setGallonsNow(f); }}
-                  style={{ fontSize:10, fontWeight:700, color, background:"transparent",
-                    border:`1px solid ${color}40`, borderRadius:99, padding:"4px 10px",
-                    cursor:"pointer", fontFamily:"'DM Sans',sans-serif", letterSpacing:0.3,
-                    transition:"all 0.15s" }}>
-                  {label}
-                </button>
-              ))}
-            </div>
           </div>
 
           {/* Fuel level */}
