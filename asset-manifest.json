@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/Fuel_Axle_Calc/static/js/main.046292b5.js",
+    "main.js": "/Fuel_Axle_Calc/static/js/main.492664fd.js",
     "index.html": "/Fuel_Axle_Calc/index.html",
-    "main.046292b5.js.map": "/Fuel_Axle_Calc/static/js/main.046292b5.js.map"
+    "main.492664fd.js.map": "/Fuel_Axle_Calc/static/js/main.492664fd.js.map"
   },
   "entrypoints": [
-    "static/js/main.046292b5.js"
+    "static/js/main.492664fd.js"
   ]
 }
