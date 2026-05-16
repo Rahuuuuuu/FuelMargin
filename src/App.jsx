@@ -705,32 +705,30 @@ export default function App() {
               <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>Includes 50 lb safety buffer</div>
             </div>
 
-            {/* Fueling mode */}
+            {/* Fuel summary + max safe */}
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
-              <div style={SL}>How Much Are You Adding?</div>
-              <div style={{ display:"flex", gap:8, marginBottom:12 }}>
-                <ModeButton active={fuelMode==="manual"} label="Manual"       color={A.blue}   onClick={()=>setFuelMode("manual")} />
-                <ModeButton active={fuelMode==="full"}   label="Fill to Full" color={A.green}  onClick={()=>setFuelMode("full")} />
-                <ModeButton active={fuelMode==="safe"}   label="Max Safe"     color="#a78bfa"  onClick={()=>setFuelMode("safe")} />
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"baseline", marginBottom:12 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:t.textSub }}>Fueling Plan</div>
+                <div style={{ fontSize:11, color:t.textFaint }}>
+                  {fuelMode==="full" ? "Fill to Full" : fuelMode==="manual" ? "Manual" : "Max Safe"}
+                </div>
               </div>
-              {fuelMode==="manual" && (
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <label style={{ fontSize:13, color:t.textSub }}>Gallons to add</label>
-                  <input type="number" inputMode="decimal" value={gallonsToAdd} placeholder="0" onChange={e=>setGallonsToAdd(e.target.value)} style={{ width:80, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
+              <div style={{ fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:t.text, marginBottom:4 }}>
+                {effectiveGal} <span style={{ fontSize:13, fontWeight:400, color:t.textFaint }}>gal adding</span>
+              </div>
+              <div style={{ height:1, background:t.divider, margin:"12px 0" }} />
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:11, color:t.textFaint, letterSpacing:0.5, textTransform:"uppercase", marginBottom:2 }}>Max Safe Add</div>
+                  <div style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color: maxSafeGal===0?A.red:"#a78bfa" }}>
+                    {maxSafeGal} <span style={{ fontSize:11, fontWeight:400, color:t.textFaint }}>gal</span>
+                  </div>
                 </div>
-              )}
-              {fuelMode==="full" && (
-                <div style={{ background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#86efac":A.green }}>
-                  Adding <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{Math.max(0,fuelCapNum-galNowNum)} gal</strong> to reach full ({fuelCapNum} gal)
+                <div style={{ fontSize:10, color:t.textFaint, textAlign:"right", lineHeight:1.5 }}>
+                  50 lb buffer applied<br />
+                  {maxSafeGal===0 ? <span style={{ color:A.red }}>already at or over limit</span> : `${Math.round(maxSafeGal * mpgNum)} mi range`}
                 </div>
-              )}
-              {fuelMode==="safe" && (
-                <div style={{ background:"rgba(167,139,250,0.08)", border:"1px solid rgba(167,139,250,0.25)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#c4b5fd":A.purple }}>
-                  Max safe fill: <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{maxSafeGal} gal</strong>
-                  <span style={{ fontSize:10, color:t.textFaint, marginLeft:8 }}>50 lb buffer applied</span>
-                  {maxSafeGal===0 && <span style={{ color:A.redText, marginLeft:8 }}>— already at or over limit</span>}
-                </div>
-              )}
+              </div>
             </div>
 
             {/* Fuel stats */}
@@ -973,6 +971,26 @@ export default function App() {
               <span style={{ fontSize:12, color:t.textFaint, fontWeight:600 }}>gal</span>
             </div>
             {!fuelOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75 }}>Current fuel level required to calculate</div>}
+          </div>
+
+          {/* Fueling mode */}
+          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
+            <div style={SL}>How Much Are You Adding?</div>
+            <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+              <ModeButton active={fuelMode==="manual"} label="Manual"       color={A.blue}  onClick={()=>setFuelMode("manual")} />
+              <ModeButton active={fuelMode==="full"}   label="Fill to Full" color={A.green} onClick={()=>setFuelMode("full")} />
+            </div>
+            {fuelMode==="manual" && (
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <label style={{ fontSize:13, color:t.textSub }}>Gallons to add</label>
+                <input type="number" inputMode="decimal" value={gallonsToAdd} placeholder="0" onChange={e=>setGallonsToAdd(e.target.value)} style={{ width:80, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
+              </div>
+            )}
+            {fuelMode==="full" && (
+              <div style={{ background:"rgba(74,222,128,0.07)", border:"1px solid rgba(74,222,128,0.2)", borderRadius:12, padding:"12px 16px", fontSize:13, color:isDark?"#86efac":A.green }}>
+                Adding <strong style={{ fontSize:16, fontFamily:"'Barlow Condensed',sans-serif" }}>{Math.max(0,fuelCapNum-galNowNum)} gal</strong> to reach full ({fuelCapNum} gal)
+              </div>
+            )}
           </div>
 
           {/* Calculate button */}
