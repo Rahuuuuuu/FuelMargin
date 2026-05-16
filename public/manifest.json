@@ -2,7 +2,7 @@
   "name": "MaxFuel",
   "short_name": "MaxFuel",
   "description": "Calculate axle weights, max legal fuel, and tandem slider adjustments for commercial trucks.",
-  "start_url": "/Fuel_Axle_Calc/",
+  "start_url": "/MaxFuel/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0f1e",

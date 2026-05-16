@@ -2,7 +2,7 @@
   "name": "fuel-axle-calc",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://Rahuuuuuu.github.io/Fuel_Axle_Calc",
+  "homepage": "https://Rahuuuuuu.github.io/MaxFuel",
   "dependencies": {
     "gh-pages": "^6.3.0",
     "react": "^18.2.0",
