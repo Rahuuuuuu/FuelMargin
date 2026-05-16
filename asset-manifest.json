@@ -1,8 +1,8 @@
 {
   "files": {
-    "main.js": "/Fuel_Axle_Calc/static/js/main.8ea1a55e.js",
-    "index.html": "/Fuel_Axle_Calc/index.html",
-    "main.8ea1a55e.js.map": "/Fuel_Axle_Calc/static/js/main.8ea1a55e.js.map"
+    "main.js": "/MaxFuel/static/js/main.8ea1a55e.js",
+    "index.html": "/MaxFuel/index.html",
+    "main.8ea1a55e.js.map": "/MaxFuel/static/js/main.8ea1a55e.js.map"
   },
   "entrypoints": [
     "static/js/main.8ea1a55e.js"
