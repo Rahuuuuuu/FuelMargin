@@ -2,6 +2,19 @@
   command   = "npm run build"
   publish   = "build"
 
+[functions]
+  node_bundler = "esbuild"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Route /api/* to Netlify functions — must come before the SPA catch-all
+[[redirects]]
+  from   = "/api/scan-ticket"
+  to     = "/.netlify/functions/scan-ticket"
+  status = 200
+
+# SPA catch-all — serves index.html for all other routes
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
