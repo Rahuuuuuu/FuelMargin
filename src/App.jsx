@@ -341,6 +341,7 @@ export default function App() {
   const setActiveProfile = (v) => { _setActiveProfile(v); ls.set("qf_activeProfile", v); };
 
   const [resetConfirm, setResetConfirm] = useState(false);
+  // eslint-disable-next-line no-unused-vars
   const [lastSession, setLastSession]   = useState(() => ls.get("qf_last_session", null));
   const [flash, setFlash]               = useState(null);
 
