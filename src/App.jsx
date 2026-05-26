@@ -660,7 +660,7 @@ export default function App() {
 
   const orientationCards = [
     { step:1, title:"Enter your weights", body:"Start by entering your current steer, drive, and trailer axle weights from your last scale ticket. These reset every session.", icon:"⚖️" },
-    { step:2, title:"Check your fuel",    body:"Enter your current fuel level using the gauge or type it in. MaxFuel will tell you the maximum you can safely add.", icon:"⛽" },
+    { step:2, title:"Check your fuel",    body:"Enter your current fuel level using the gauge or type it in. FuelMargin will tell you the maximum you can safely add.", icon:"⛽" },
     { step:3, title:"Save your truck",    body:"Set your tank capacity, MPG, and axle type — then save them as a truck profile so you never have to enter them again.", icon:"🚛" },
   ];
   const oc = orientationCards[orientationStep - 1];
@@ -903,7 +903,7 @@ export default function App() {
                   These results are estimates based on the weights you entered. Actual scale weights may differ due to load distribution, fuel burn, and equipment variation.
                 </p>
                 <p style={{ margin:0, fontSize:12, color:t.textMuted, lineHeight:1.65 }}>
-                  <strong style={{ color:t.textSub }}>You are solely responsible</strong> for verifying your vehicle is legally loaded and safe to operate. The developers of MaxFuel are not liable for any violations, citations, accidents, or damages resulting from the use of this application.
+                  <strong style={{ color:t.textSub }}>You are solely responsible</strong> for verifying your vehicle is legally loaded and safe to operate. The developers of FuelMargin are not liable for any violations, citations, accidents, or damages resulting from the use of this application.
                 </p>
               </div>
             )}
@@ -914,7 +914,7 @@ export default function App() {
 
       {/* ── App header ── */}
       <div style={{ padding:"16px 16px 0", paddingTop:"max(16px, env(safe-area-inset-top))", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <h1 style={{ margin:0, fontSize:22, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, letterSpacing:-0.5, color:t.text }}>MaxFuel</h1>
+        <h1 style={{ margin:0, fontSize:22, fontFamily:"'Barlow Condensed',sans-serif", fontWeight:800, letterSpacing:-0.5, color:t.text }}>FuelMargin</h1>
         <div style={{ position:"relative" }}>
           <button onClick={()=>setSettingsOpen(o=>!o)} style={{ width:36, height:36, borderRadius:8, border:`1.5px solid ${settingsOpen?t.text:t.border}`, background: settingsOpen?t.surface:"transparent", fontSize:18, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:t.textMuted, transition:"all 0.15s" }}>&#9881;</button>
           {settingsOpen && (

@@ -1,8 +1,8 @@
 {
-  "name": "MaxFuel",
-  "short_name": "MaxFuel",
+  "name": "FuelMargin",
+  "short_name": "FuelMargin",
   "description": "Calculate axle weights, max legal fuel, and tandem slider adjustments for commercial trucks.",
-  "start_url": "/MaxFuel/",
+  "start_url": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0a0f1e",

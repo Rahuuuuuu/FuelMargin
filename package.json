@@ -1,8 +1,8 @@
 {
-  "name": "fuel-axle-calc",
+  "name": "fuelmargin",
   "version": "1.0.0",
   "private": true,
-  "homepage": "https://Rahuuuuuu.github.io/MaxFuel",
+  "homepage": "https://fuelmargin.netlify.app",
   "dependencies": {
     "gh-pages": "^6.3.0",
     "react": "^18.2.0",
