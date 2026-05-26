@@ -341,8 +341,6 @@ export default function App() {
   const setActiveProfile = (v) => { _setActiveProfile(v); ls.set("qf_activeProfile", v); };
 
   const [resetConfirm, setResetConfirm] = useState(false);
-  // eslint-disable-next-line no-unused-vars
-  const [lastSession, setLastSession]   = useState(() => ls.get("qf_last_session", null));
   const [flash, setFlash]               = useState(null);
 
   // ── Scale tab state ───────────────────────────────────────
@@ -508,7 +506,6 @@ export default function App() {
     if (steer !== "" || drives !== "" || trailer !== "" || gallonsNow !== "") {
       const snapshot = { steer, drives, trailer, gallonsNow, fuelMode, gallonsAdded: effectiveGal, ts: Date.now() };
       ls.set("qf_last_session", snapshot);
-      setLastSession(snapshot);
     }
     setSteer(""); setDrives(""); setTrailer(""); setGallonsNow(""); setGallonsToAdd("");
     setResetConfirm(false);
