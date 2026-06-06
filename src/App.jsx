@@ -548,7 +548,7 @@ export default function App() {
       const base64 = e.target.result.split(",")[1];
       const mimeType = file.type || "image/jpeg";
       try {
-        const resp = await fetch("/api/scan-ticket", {
+        const resp = await fetch("/.netlify/functions/scan-ticket", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ image: base64, mimeType }),
@@ -997,8 +997,7 @@ export default function App() {
             </div>
 
             {/* Scaling notice */}
-            <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.06)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.18)":"rgba(217,119,6,0.2)"}`, borderRadius:10, padding:"10px 12px", display:"flex", gap:8, alignItems:"flex-start" }}>
-              <span style={{ fontSize:13, flexShrink:0, lineHeight:1 }}>💡</span>
+            <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.06)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.18)":"rgba(217,119,6,0.2)"}`, borderRadius:10, padding:"10px 12px" }}>
               <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.5 }}>For best accuracy, record your fuel level at the scale — or fuel immediately after weighing.</span>
             </div>
 
@@ -1106,7 +1105,7 @@ export default function App() {
           {/* Apply success message */}
           {scaleApplyMsg && (
             <div style={{ background:"rgba(74,222,128,0.10)", border:"1px solid rgba(74,222,128,0.3)", borderRadius:12, padding:"12px 16px", marginBottom:16, fontSize:13, color:A.green, textAlign:"center", fontWeight:600 }}>
-              ✓ Weights applied — switching to fuel calculator
+              Done — Weights applied — switching to fuel calculator
             </div>
           )}
 
@@ -1120,7 +1119,7 @@ export default function App() {
               <>
                 <button onClick={() => fileInputRef.current?.click()}
                   style={{ width:"100%", padding:"16px", borderRadius:12, border:"none", background:A.blue, color:"#fff", fontSize:16, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", boxShadow:`0 4px 16px ${A.blue}40`, transition:"all 0.2s" }}>
-                  📷  Take Photo or Upload
+                  Take Photo or Upload
                 </button>
                 {scanError && (
                   <div style={{ marginTop:12, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:10, padding:"10px 14px", fontSize:13, color:isDark?"#ff6b6b":"#dc2626" }}>
@@ -1202,8 +1201,8 @@ export default function App() {
                   ))}
                 </div>
                 <div style={{ display:"flex", gap:20, marginBottom:12, fontSize:12, color:t.textSecondary }}>
-                  <span>⛽ {scaleSession.fuelAtScale} gal at scale</span>
-                  <span>🛣 {scaleSession.odometerAtScale ? scaleSession.odometerAtScale.toLocaleString() : "—"} mi odo</span>
+                  <span>Fuel at scale: {scaleSession.fuelAtScale} gal</span>
+                  <span>Odometer: {scaleSession.odometerAtScale ? scaleSession.odometerAtScale.toLocaleString() : "—"}</span>
                 </div>
                 {!scaleClearConfirm ? (
                   <button onClick={()=>setScaleClearConfirm(true)}
@@ -1555,7 +1554,7 @@ export default function App() {
                       ].map(({label,val,limit,color})=>{
                         const over = val > limit;
                         return (
-                          <div key={label} style={{ background:over?"rgba(255,68,68,0.07)":"rgba(74,222,128,0.05)", border:`1px solid ${over?"rgba(255,68,68,0.25)":"rgba(74,222,128,0.15)"}`, borderRadius:12, padding:"12px" }}>
+                          <div key={label} style={{ background:over?(isDark?"rgba(255,68,68,0.07)":"rgba(220,38,38,0.06)"):(isDark?"rgba(74,222,128,0.05)":"rgba(22,163,74,0.06)"), border:`1px solid ${over?(isDark?"rgba(255,68,68,0.25)":"rgba(220,38,38,0.2)"):(isDark?"rgba(74,222,128,0.15)":"rgba(22,163,74,0.15)")}`, borderRadius:12, padding:"12px" }}>
                             <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:0.5, marginBottom:4 }}>{label}</div>
                             <div style={{ fontSize:17, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:over?A.redText:t.text }}>{fmt(val)} lb</div>
                             <div style={{ fontSize:10, color:over?A.redText:A.green, fontWeight:700 }}>{over?`+${fmt(val-limit)} over`:`-${fmt(limit-val)} left`}</div>
@@ -1573,21 +1572,6 @@ export default function App() {
           </div>
 
         </> /* end slider tab */}
-
-        {/* Footer */}
-        <div style={{ borderTop:`1px solid ${t.divider}`, marginTop:16, paddingTop:12, display:"flex", justifyContent:"space-around" }}>
-          {[
-            ["Diesel","8 lb/gal"],
-            ["Tank",`${fuelCapNum} gal`],
-            ["Economy",`${mpgNum} mpg`],
-            ["Axles",spreadAxle?"Spread":"Tandem"],
-          ].map(([label,val])=>(
-            <div key={label} style={{ textAlign:"center" }}>
-              <div style={{ fontSize:9, color:t.textFaint, textTransform:"uppercase", letterSpacing:1, fontFamily:"'DM Sans',sans-serif" }}>{label}</div>
-              <div style={{ fontSize:13, color:t.textSecondary, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif" }}>{val}</div>
-            </div>
-          ))}
-        </div>
 
       </div>
 
@@ -1643,3 +1627,30 @@ export default function App() {
     </div>
   );
 }
+
+/*
+ ── Bug Fixes & Cleanup ───────────────────────────────────────────────────────
+ Fix 1 — Netlify Function URL: APPLIED
+   fetch("/api/scan-ticket") → fetch("/.netlify/functions/scan-ticket")
+
+ Fix 2 — Emoji removal: APPLIED (4 locations)
+   - Scaling notice: 💡 removed, flex layout simplified to single span
+   - Apply success message: ✓ replaced with "Done"
+   - Scan button: 📷 removed, text reads "Take Photo or Upload"
+   - Scale session row: ⛽ / 🛣 replaced with "Fuel at scale:" / "Odometer:"
+   - ⚠️ on driver responsibility strip: intentionally kept
+
+ Fix 3 — oc variable: SKIPPED (already correct)
+   orientationCards array + oc = orientationCards[orientationStep - 1]
+   is structurally equivalent and working — no change made.
+
+ Fix 4 — trailerTypes array: SKIPPED (already correct)
+   Declared inside the component as a const — present and working.
+
+ Fix 5 — Slider before/after card colors: APPLIED
+   All four hardcoded rgba values replaced with isDark ternaries
+   scoped to the slider result grid only.
+
+ Fix 6 — Footer removed: APPLIED
+   Diesel / Tank / Economy / Axles summary row removed entirely.
+────────────────────────────────────────────────────────────────────────────── */
