@@ -610,7 +610,7 @@ export default function App() {
     setScaleApplyMsg(true);
     setTimeout(() => {
       setScaleApplyMsg(false);
-      if (sessionType === "fuel") switchTab("main");
+      switchTab("main");
     }, 1300);
   };
 
@@ -1011,27 +1011,33 @@ export default function App() {
 
           </div>
 
-          {/* Current odometer — shown when a scale session with odometer reference exists */}
+          {/* Current odometer — required when a scale session with odometer reference exists */}
           {scaleSession && scaleSession.odometerAtScale && (
-            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:14, padding:"12px 16px", marginBottom:16, boxShadow:t.shadow }}>
+            <div style={{ background:t.surface, border:`1px solid ${currentOdometer===""?"rgba(239,68,68,0.35)":t.border}`, borderRadius:14, padding:"12px 16px", marginBottom:16, boxShadow:t.shadow }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
                 <div>
-                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub }}>Current Odometer</div>
-                  <div style={{ fontSize:11, color:t.textFaint, marginTop:2 }}>Scales weights &amp; fuel as you drive away from the scale</div>
+                  <div style={{ fontSize:12, fontWeight:700, color:currentOdometer===""?"#ef4444":t.textSub }}>
+                    Current Odometer{currentOdometer===""?" *":""}
+                  </div>
+                  <div style={{ fontSize:11, color:t.textFaint, marginTop:2 }}>Enter to estimate axle weights &amp; fuel since scaling</div>
                 </div>
+                <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                <input type="number" inputMode="numeric" value={currentOdometer} placeholder={scaleSession.odometerAtScale.toLocaleString()}
+              <div style={{ position:"relative" }}>
+                <input type="number" inputMode="numeric" value={currentOdometer} placeholder="Enter miles"
                   onChange={e => { odoChangedByUser.current = true; setCurrentOdometer(e.target.value); }}
-                  style={{ flex:1, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:20, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"10px" }} />
-                <span style={{ fontSize:13, color:t.textFaint, fontWeight:600 }}>mi</span>
+                  style={{ width:"100%", boxSizing:"border-box", background:currentOdometer===""?"rgba(239,68,68,0.06)":t.inputBg, border:`1px solid ${currentOdometer===""?"rgba(239,68,68,0.3)":t.border}`, borderRadius:10, color:t.text, fontSize:20, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"10px 44px 10px 10px" }} />
+                <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", fontSize:13, color:t.textFaint, fontWeight:600, pointerEvents:"none" }}>mi</span>
               </div>
+              {currentOdometer === "" && (
+                <div style={{ marginTop:6, fontSize:11, color:"#ef4444", opacity:0.75 }}>Required to estimate weights and fuel level</div>
+              )}
               {currentOdometer !== "" && (
                 <div style={{ marginTop:8, fontSize:11, color:t.textFaint }}>
                   {(() => {
                     const miles = Math.max(0, Number(currentOdometer) - scaleSession.odometerAtScale);
                     const burned = Math.round((miles / mpgNum) * 10) / 10;
-                    return `${miles.toLocaleString()} mi driven · ~${burned} gal burned since scale`;
+                    return `${miles.toLocaleString()} mi since scale · ~${burned} gal burned`;
                   })()}
                 </div>
               )}
@@ -1047,10 +1053,19 @@ export default function App() {
               <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
             </div>
 
-            {/* Scaling notice */}
-            <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.06)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.18)":"rgba(217,119,6,0.2)"}`, borderRadius:10, padding:"10px 12px" }}>
-              <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.5 }}>For best accuracy, record your fuel level at the scale — or fuel immediately after weighing.</span>
-            </div>
+            {/* Fuel level notice — estimated vs generic tip */}
+            {estimatedApplied && scaleSession ? (
+              <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.07)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.25)":"rgba(217,119,6,0.25)"}`, borderRadius:10, padding:"10px 12px" }}>
+                <div style={{ fontSize:11, fontWeight:700, color:A.yellow, letterSpacing:0.3, marginBottom:3 }}>ESTIMATED FUEL LEVEL</div>
+                <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.6 }}>
+                  Calculated from your scale fuel ({scaleSession.fuelAtScale} gal at {scaleSession.odometerAtScale?.toLocaleString()} mi) minus estimated burn based on current odometer and your {mpgNum} mpg setting. Verify before relying on this value.
+                </span>
+              </div>
+            ) : (
+              <div style={{ marginBottom:14, background:isDark?"rgba(250,204,21,0.06)":"rgba(217,119,6,0.05)", border:`1px solid ${isDark?"rgba(250,204,21,0.18)":"rgba(217,119,6,0.2)"}`, borderRadius:10, padding:"10px 12px" }}>
+                <span style={{ fontSize:11, color:t.textMuted, lineHeight:1.5 }}>For best accuracy, record your fuel level at the scale — or fuel immediately after weighing.</span>
+              </div>
+            )}
 
             {(() => {
               const fraction = gallonsNow === "" ? 0 : Math.min(galNowNum / fuelCapNum, 1);
