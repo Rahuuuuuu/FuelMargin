@@ -1389,31 +1389,80 @@ export default function App() {
 
               <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
                 <div style={SL}>At-Scale Conditions</div>
-                <div style={{ fontSize:13, color:t.textMuted, marginBottom:20, lineHeight:1.5 }}>
+                <div style={{ fontSize:13, color:t.textMuted, marginBottom:16, lineHeight:1.5 }}>
                   Record your fuel level and odometer <strong style={{ color:t.text }}>right now at the scale</strong>
                 </div>
 
-                <div style={{ marginBottom:20 }}>
-                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub, marginBottom:8 }}>
+                {/* ── Fuel gauge interface ── */}
+                <div style={{ marginBottom:4 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub, marginBottom:10 }}>
                     Fuel Level at Scale <span style={{ color:"#ef4444" }}>*</span>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                    <input type="number" inputMode="decimal" value={wizardFuelAtScale} placeholder="—"
-                      onChange={e => setWizardFuelAtScale(e.target.value)}
-                      style={{ flex:1, background:wizardFuelAtScale?t.inputBg:"rgba(239,68,68,0.06)", border:`1px solid ${wizardFuelAtScale?t.border:"rgba(239,68,68,0.3)"}`, borderRadius:10, color:t.text, fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"12px" }} />
-                    <span style={{ fontSize:14, color:t.textFaint, fontWeight:600 }}>gal</span>
-                  </div>
+                  {(() => {
+                    const fuelVal   = Number(wizardFuelAtScale) || 0;
+                    const fraction  = wizardFuelAtScale === "" ? 0 : Math.min(fuelVal / fuelCapNum, 1);
+                    const hasValue  = wizardFuelAtScale !== "";
+                    const fuelLow   = fraction < 0.13;
+                    const fuelMed   = fraction < 0.26;
+                    const gaugeColor = fuelLow ? "#ff4444" : fuelMed ? "#facc15" : A.green;
+                    const ticks  = [0,1,2,3,4,5,6,7,8];
+                    const labels = ["E","⅛","¼","⅜","½","⅝","¾","⅞","F"];
+                    const sliderVal = !hasValue ? -1 : Math.round(fraction * 8);
+                    return (
+                      <div>
+                        <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark} />
+                        {hasValue ? (
+                          <div style={{ textAlign:"center", marginTop:4, marginBottom:8 }}>
+                            <span style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:gaugeColor }}>
+                              {fuelVal === 0 ? "EMPTY" : fuelVal >= fuelCapNum ? "FULL" : `${fuelVal} gal`}
+                            </span>
+                            {fuelVal > 0 && fuelVal < fuelCapNum && (
+                              <span style={{ fontSize:12, color:t.textSecondary, marginLeft:8 }}>({Math.round(fraction * 100)}%)</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ textAlign:"center", marginBottom:8 }}>
+                            <span style={{ fontSize:13, color:t.textFaint, fontStyle:"italic" }}>tap below to set level</span>
+                          </div>
+                        )}
+                        <div style={{ display:"flex", gap:4, marginBottom:4 }}>
+                          {ticks.map(i => (
+                            <button key={i} onClick={() => setWizardFuelAtScale(String(Math.round((i/8)*fuelCapNum)))}
+                              style={{ flex:1, height:28, borderRadius:8, cursor:"pointer",
+                                border: sliderVal===i ? `1.5px solid ${gaugeColor}` : `1px solid ${t.border}`,
+                                background: sliderVal===i ? (isDark?`${gaugeColor}30`:`${gaugeColor}20`) : (isDark?"rgba(255,255,255,0.03)":"rgba(0,0,0,0.03)"),
+                                transition:"all 0.15s", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                              <span style={{ fontSize:9, fontWeight:700, color:sliderVal===i?gaugeColor:t.textFaint, fontFamily:"'DM Sans',sans-serif" }}>{labels[i]}</span>
+                            </button>
+                          ))}
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:8, paddingTop:8, borderTop:`1px solid ${t.divider}` }}>
+                          <span style={{ fontSize:11, color:t.textSecondary, whiteSpace:"nowrap" }}>Or enter exact:</span>
+                          <input type="number" inputMode="decimal" value={wizardFuelAtScale} placeholder="—"
+                            onChange={e => setWizardFuelAtScale(e.target.value)}
+                            style={{ flex:1, minWidth:0, background:"transparent", border:"none",
+                              borderBottom:`1.5px solid ${wizardFuelAtScale===""?"rgba(239,68,68,0.4)":t.borderStrong}`,
+                              color:wizardFuelAtScale===""?"#888":t.text, fontSize:20, fontWeight:700,
+                              fontFamily:"'Barlow Condensed',sans-serif", outline:"none", padding:"4px 0", textAlign:"right" }} />
+                          <span style={{ fontSize:12, color:t.textFaint, fontWeight:600 }}>gal</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                   {!wizardFuelAtScale && <div style={{ fontSize:11, color:"#ef4444", opacity:0.75, marginTop:6 }}>Required to enable fuel burn estimation</div>}
                 </div>
 
+                <div style={{ height:1, background:t.divider, margin:"16px 0" }} />
+
+                {/* ── Odometer ── */}
                 <div>
                   <div style={{ fontSize:12, fontWeight:700, color:t.textSub, marginBottom:4 }}>Odometer at Scale</div>
-                  <div style={{ fontSize:11, color:t.textFaint, marginBottom:8 }}>Optional — enables automatic weight estimation as you drive</div>
-                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                  <div style={{ fontSize:11, color:t.textFaint, marginBottom:10 }}>Optional — enables automatic weight estimation as you drive</div>
+                  <div style={{ position:"relative" }}>
                     <input type="number" inputMode="numeric" value={wizardOdoAtScale} placeholder="—"
                       onChange={e => setWizardOdoAtScale(e.target.value)}
-                      style={{ flex:1, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"12px" }} />
-                    <span style={{ fontSize:14, color:t.textFaint, fontWeight:600 }}>mi</span>
+                      style={{ width:"100%", boxSizing:"border-box", background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"12px 44px 12px 12px" }} />
+                    <span style={{ position:"absolute", right:14, top:"50%", transform:"translateY(-50%)", fontSize:13, color:t.textFaint, fontWeight:600, pointerEvents:"none" }}>mi</span>
                   </div>
                 </div>
               </div>
