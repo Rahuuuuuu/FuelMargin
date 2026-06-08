@@ -352,14 +352,20 @@ export default function App() {
   const [scanReviewDrives, setScanReviewDrives]  = useState("");
   const [scanReviewTrailer, setScanReviewTrailer]= useState("");
   const [currentOdometer, _setCurrentOdometer]  = useState(() => ls.get("qf_current_odometer", ""));
-  const [scaleManualExpanded, setScaleManualExpanded] = useState(false);
-  const [scaleManualSteer, setScaleManualSteer]   = useState("");
-  const [scaleManualDrives, setScaleManualDrives] = useState("");
-  const [scaleManualTrailer, setScaleManualTrailer]= useState("");
-  const [scaleManualFuel, setScaleManualFuel]     = useState("");
-  const [scaleManualOdo, setScaleManualOdo]       = useState("");
   const [scaleClearConfirm, setScaleClearConfirm] = useState(false);
   const [scaleApplyMsg, setScaleApplyMsg]         = useState(false);
+
+  // ── Scale wizard state ────────────────────────────────────
+  const [scaleStep, setScaleStep]               = useState(0);   // 0=type, 1=weights, 2=conditions, 3=complete
+  const [sessionType, setSessionType]           = useState(null); // "scale" | "fuel"
+  const [wizardSteer, setWizardSteer]           = useState("");
+  const [wizardDrives, setWizardDrives]         = useState("");
+  const [wizardTrailer, setWizardTrailer]       = useState("");
+  const [wizardFuelAtScale, setWizardFuelAtScale] = useState("");
+  const [wizardOdoAtScale, setWizardOdoAtScale]   = useState("");
+  const [fuelAtPump, setFuelAtPump]             = useState("");
+  const [estimatedApplied, setEstimatedApplied] = useState(false);
+  const odoChangedByUser = useRef(false);
   const prevSafe        = useRef(null);
   const sliderResultRef = useRef(null);
   const fileInputRef    = useRef(null);
@@ -571,39 +577,41 @@ export default function App() {
   };
 
   const applyScannedWeights = () => {
-    const session = {
-      timestamp: Date.now(),
-      steer: Number(scanReviewSteer) || 0,
-      drives: Number(scanReviewDrives) || 0,
-      trailer: Number(scanReviewTrailer) || 0,
-      fuelAtScale: galNowNum,
-      odometerAtScale: Number(currentOdometer) || null,
-    };
-    setScaleSession(session);
-    if (scanReviewSteer)  setSteer(scanReviewSteer);
-    if (scanReviewDrives) setDrives(scanReviewDrives);
-    if (scanReviewTrailer)setTrailer(scanReviewTrailer);
+    // Wizard Step 1: populate wizard inputs from scan, don't save session yet
+    if (scanReviewSteer)  setWizardSteer(scanReviewSteer);
+    if (scanReviewDrives) setWizardDrives(scanReviewDrives);
+    if (scanReviewTrailer)setWizardTrailer(scanReviewTrailer);
     setScanResult(null); setScanError(null);
-    setScaleApplyMsg(true);
-    setTimeout(() => { setScaleApplyMsg(false); switchTab("main"); }, 1300);
   };
 
-  const saveManualScaleSession = () => {
+  const resetScaleWizard = () => {
+    setScaleStep(0); setSessionType(null);
+    setWizardSteer(""); setWizardDrives(""); setWizardTrailer("");
+    setWizardFuelAtScale(""); setWizardOdoAtScale("");
+    setFuelAtPump("");
+    setScanResult(null); setScanError(null); setScaleApplyMsg(false);
+  };
+
+  const completeScaleSession = () => {
     const session = {
       timestamp: Date.now(),
-      steer: Number(scaleManualSteer) || 0,
-      drives: Number(scaleManualDrives) || 0,
-      trailer: Number(scaleManualTrailer) || 0,
-      fuelAtScale: Number(scaleManualFuel) || 0,
-      odometerAtScale: Number(scaleManualOdo) || null,
+      steer: Number(wizardSteer) || 0,
+      drives: Number(wizardDrives) || 0,
+      trailer: Number(wizardTrailer) || 0,
+      fuelAtScale: Number(wizardFuelAtScale) || 0,
+      odometerAtScale: Number(wizardOdoAtScale) || null,
+      sessionType,
     };
     setScaleSession(session);
-    if (scaleManualSteer)  setSteer(scaleManualSteer);
-    if (scaleManualDrives) setDrives(scaleManualDrives);
-    if (scaleManualTrailer)setTrailer(scaleManualTrailer);
-    if (scaleManualFuel)   setGallonsNow(scaleManualFuel);
+    setSteer(wizardSteer);
+    setDrives(wizardDrives);
+    setTrailer(wizardTrailer);
+    if (sessionType === "fuel" && fuelAtPump) setGallonsNow(fuelAtPump);
     setScaleApplyMsg(true);
-    setTimeout(() => { setScaleApplyMsg(false); switchTab("main"); }, 1300);
+    setTimeout(() => {
+      setScaleApplyMsg(false);
+      if (sessionType === "fuel") switchTab("main");
+    }, 1300);
   };
 
   // ── Effects ───────────────────────────────────────────────
@@ -631,6 +639,19 @@ export default function App() {
   useEffect(() => {
     if (spreadAxle && activeTab === "slider") switchTab("main");
   }, [spreadAxle]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-populate axle weights + fuel from scale session when odometer is entered
+  useEffect(() => {
+    if (!odoChangedByUser.current) return;
+    if (!scaleSession || currentOdometer === "" || !scaleSession.odometerAtScale) return;
+    const miles    = Math.max(0, Number(currentOdometer) - scaleSession.odometerAtScale);
+    const burned   = miles / mpgNum;
+    const wtBurned = burned * C.DIESEL_LB_PER_GAL;
+    setSteer(String(Math.round(Math.max(0, scaleSession.steer  - wtBurned * C.STEER_PCT))));
+    setDrives(String(Math.round(Math.max(0, scaleSession.drives - wtBurned * C.DRIVE_PCT))));
+    setGallonsNow(String(Math.round(Math.max(0, scaleSession.fuelAtScale - burned))));
+    setEstimatedApplied(true);
+  }, [currentOdometer, scaleSession]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Style helpers ─────────────────────────────────────────
   const SL = {
@@ -956,14 +977,17 @@ export default function App() {
             <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow }}>
               <div style={{ padding:"16px" }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
-                  <span style={{ fontSize:13, fontWeight:700, color:t.textSub }}>Axle Weights</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontSize:13, fontWeight:700, color:t.textSub }}>Axle Weights</span>
+                    {estimatedApplied && <span style={{ fontSize:9, fontWeight:700, color:A.yellow, letterSpacing:0.5, border:`1px solid ${A.yellow}`, borderRadius:4, padding:"1px 5px" }}>ESTIMATED</span>}
+                  </div>
                   <span style={{ fontSize:10, color:"#ef4444", fontWeight:700, letterSpacing:0.5 }}>REQUIRED</span>
                 </div>
                 <div style={{ display:"flex", gap:8 }}>
                   {[
-                    ["Steer",   steer,   setSteer,   steerWarning,   "Steer axles typically range 6,000–12,000 lb — double check this value."],
-                    ["Drives",  drives,  setDrives,  drivesWarning,  "Drive axles typically range 10,000–34,000 lb — double check this value."],
-                    ["Trailer", trailer, setTrailer, trailerWarning, "Trailer axles typically range 5,000–40,000 lb — double check this value."],
+                    ["Steer",   steer,   (v) => { setSteer(v);   setEstimatedApplied(false); }, steerWarning,   "Steer axles typically range 6,000–12,000 lb — double check this value."],
+                    ["Drives",  drives,  (v) => { setDrives(v);  setEstimatedApplied(false); }, drivesWarning,  "Drive axles typically range 10,000–34,000 lb — double check this value."],
+                    ["Trailer", trailer, (v) => { setTrailer(v); setEstimatedApplied(false); }, trailerWarning, "Trailer axles typically range 5,000–40,000 lb — double check this value."],
                   ].map(([label, val, set, warn, warnText]) => (
                     <div key={label} style={{ flex:1, minWidth:0 }}>
                       <div style={reqCard(val)}>
@@ -986,6 +1010,33 @@ export default function App() {
             </div>
 
           </div>
+
+          {/* Current odometer — shown when a scale session with odometer reference exists */}
+          {scaleSession && scaleSession.odometerAtScale && (
+            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:14, padding:"12px 16px", marginBottom:16, boxShadow:t.shadow }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10 }}>
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub }}>Current Odometer</div>
+                  <div style={{ fontSize:11, color:t.textFaint, marginTop:2 }}>Scales weights &amp; fuel as you drive away from the scale</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                <input type="number" inputMode="numeric" value={currentOdometer} placeholder={scaleSession.odometerAtScale.toLocaleString()}
+                  onChange={e => { odoChangedByUser.current = true; setCurrentOdometer(e.target.value); }}
+                  style={{ flex:1, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:20, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"10px" }} />
+                <span style={{ fontSize:13, color:t.textFaint, fontWeight:600 }}>mi</span>
+              </div>
+              {currentOdometer !== "" && (
+                <div style={{ marginTop:8, fontSize:11, color:t.textFaint }}>
+                  {(() => {
+                    const miles = Math.max(0, Number(currentOdometer) - scaleSession.odometerAtScale);
+                    const burned = Math.round((miles / mpgNum) * 10) / 10;
+                    return `${miles.toLocaleString()} mi driven · ~${burned} gal burned since scale`;
+                  })()}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Fuel level */}
           <div style={{ background:t.surface, border:`1px solid ${gallonsNow===""?"rgba(239,68,68,0.35)":t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
@@ -1050,6 +1101,25 @@ export default function App() {
             {!fuelOK && <div style={{ marginTop:8, fontSize:11, color:"#ef4444", opacity:0.75 }}>Current fuel level required to calculate</div>}
           </div>
 
+          {/* Scale session reference row — shown below fuel card when a session with fuel data exists */}
+          {scaleSession && scaleSession.fuelAtScale > 0 && (
+            <div style={{ display:"flex", gap:10, alignItems:"center", marginTop:-12, marginBottom:16, paddingLeft:4, paddingRight:4 }}>
+              <div style={{ flex:1, background:isDark?"rgba(250,204,21,0.05)":"rgba(217,119,6,0.04)", border:`1px solid ${isDark?"rgba(250,204,21,0.15)":"rgba(217,119,6,0.18)"}`, borderRadius:10, padding:"8px 12px" }}>
+                <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1, marginBottom:2 }}>Scale Fuel</div>
+                <div style={{ fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:A.yellow }}>{scaleSession.fuelAtScale} gal</div>
+              </div>
+              {scaleSession.odometerAtScale && (
+                <div style={{ flex:1, background:isDark?"rgba(250,204,21,0.05)":"rgba(217,119,6,0.04)", border:`1px solid ${isDark?"rgba(250,204,21,0.15)":"rgba(217,119,6,0.18)"}`, borderRadius:10, padding:"8px 12px" }}>
+                  <div style={{ fontSize:10, color:t.textFaint, textTransform:"uppercase", letterSpacing:1, marginBottom:2 }}>Scale Odometer</div>
+                  <div style={{ fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:A.yellow }}>{scaleSession.odometerAtScale.toLocaleString()}</div>
+                </div>
+              )}
+              <button onClick={() => switchTab("scale")} style={{ fontSize:11, color:t.textFaint, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 10px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif", whiteSpace:"nowrap" }}>
+                View session
+              </button>
+            </div>
+          )}
+
           {/* Fueling mode */}
           <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:20, boxShadow:t.shadow }}>
             <div style={SL}>How Much Are You Adding?</div>
@@ -1102,91 +1172,24 @@ export default function App() {
           <input ref={fileInputRef} type="file" accept="image/*" style={{ display:"none" }}
             onChange={e => { if (e.target.files[0]) scanTicket(e.target.files[0]); e.target.value = ""; }} />
 
-          {/* Apply success message */}
+          {/* Apply success toast */}
           {scaleApplyMsg && (
             <div style={{ background:"rgba(74,222,128,0.10)", border:"1px solid rgba(74,222,128,0.3)", borderRadius:12, padding:"12px 16px", marginBottom:16, fontSize:13, color:A.green, textAlign:"center", fontWeight:600 }}>
-              Done — Weights applied — switching to fuel calculator
+              {sessionType === "fuel" ? "Weights applied — heading to calculator…" : "Scale session logged"}
             </div>
           )}
 
-          {/* ── Section A: Scan Scale Ticket ── */}
-          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:16, boxShadow:t.shadow }}>
-            <div style={SL}>Scan Scale Ticket</div>
-            <div style={{ fontSize:13, color:t.textMuted, marginBottom:16, lineHeight:1.5 }}>Photograph your ticket or upload a screenshot</div>
-
-            {/* Idle — no scan in progress */}
-            {!scanning && !scanResult && (
-              <>
-                <button onClick={() => fileInputRef.current?.click()}
-                  style={{ width:"100%", padding:"16px", borderRadius:12, border:"none", background:A.blue, color:"#fff", fontSize:16, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", boxShadow:`0 4px 16px ${A.blue}40`, transition:"all 0.2s" }}>
-                  Take Photo or Upload
-                </button>
-                {scanError && (
-                  <div style={{ marginTop:12, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:10, padding:"10px 14px", fontSize:13, color:isDark?"#ff6b6b":"#dc2626" }}>
-                    {scanError}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* Loading */}
-            {scanning && (
-              <div style={{ textAlign:"center", padding:"20px 0", fontSize:15, color:t.textMuted, animation:"pulseAnim 1.4s ease-in-out infinite" }}>
-                Reading ticket…
-              </div>
-            )}
-
-            {/* Review panel */}
-            {scanResult && !scanning && (
-              <div>
-                <div style={{ fontSize:12, color:t.textMuted, marginBottom:14, lineHeight:1.5 }}>
-                  Review extracted weights — tap a value to correct it before applying
+          {/* ── Existing Session View ── */}
+          {scaleSession && scaleStep === 0 && (
+            <div>
+              <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                  <div style={SL}>Active Scale Session</div>
+                  <span style={{ fontSize:10, fontWeight:700, letterSpacing:0.5, border:`1px solid ${A.green}50`, borderRadius:6, padding:"2px 7px", color:A.green }}>
+                    {scaleSession.sessionType === "fuel" ? "WEIGH & FUEL" : "SCALE ONLY"}
+                  </span>
                 </div>
-                {[
-                  { label:"Steer",   val:scanReviewSteer,   set:setScanReviewSteer,   conf:scanResult.steer?.confidence },
-                  { label:"Drives",  val:scanReviewDrives,  set:setScanReviewDrives,  conf:scanResult.drives?.confidence },
-                  { label:"Trailer", val:scanReviewTrailer, set:setScanReviewTrailer, conf:scanResult.trailer?.confidence },
-                ].map(({ label, val, set, conf }) => {
-                  const dotColor = conf==="high" ? A.green : conf==="medium" ? A.yellow : A.red;
-                  return (
-                    <div key={label} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                      <div style={{ width:8, height:8, borderRadius:"50%", background:dotColor, flexShrink:0 }} />
-                      <span style={{ fontSize:12, color:t.textSecondary, width:48, flexShrink:0 }}>{label}</span>
-                      <input type="number" inputMode="numeric" value={val} placeholder="—" onChange={e=>set(e.target.value)}
-                        style={{ flex:1, minWidth:0, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
-                      <span style={{ fontSize:11, color:t.textFaint, flexShrink:0 }}>lb</span>
-                    </div>
-                  );
-                })}
-                <div style={{ fontSize:10, color:t.textFaint, marginBottom:12, lineHeight:1.5 }}>
-                  🟢 high confidence &nbsp;·&nbsp; 🟡 uncertain &nbsp;·&nbsp; 🔴 could not read
-                </div>
-                <div style={{ display:"flex", gap:8 }}>
-                  <button onClick={() => { setScanResult(null); setScanError(null); }}
-                    style={{ flex:1, padding:"12px", borderRadius:8, border:`1px solid ${t.border}`, background:"transparent", color:t.textMuted, fontSize:13, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>
-                    Cancel
-                  </button>
-                  <button onClick={applyScannedWeights}
-                    style={{ flex:2, padding:"12px", borderRadius:12, border:"none", background:A.green, color:isDark?"#0d1a0f":"#fff", fontSize:13, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", boxShadow:`0 4px 12px ${A.green}30` }}>
-                    Use These Weights
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* ── Section B: Current Scale Session ── */}
-          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:16, boxShadow:t.shadow }}>
-            <div style={SL}>Current Scale Session</div>
-            {!scaleSession ? (
-              <div style={{ fontSize:13, color:t.textFaint, fontStyle:"italic", lineHeight:1.6 }}>
-                No scale session logged — scan your ticket or enter weights manually below.
-              </div>
-            ) : (
-              <div>
-                <div style={{ fontSize:12, color:t.textSecondary, marginBottom:12 }}>
-                  Scaled {fmtTs(scaleSession.timestamp)}
-                </div>
+                <div style={{ fontSize:12, color:t.textMuted, marginBottom:12 }}>Scaled {fmtTs(scaleSession.timestamp)}</div>
                 <div style={{ display:"flex", gap:8, marginBottom:12 }}>
                   {[
                     { label:"Steer",   val:scaleSession.steer,   color:A.blue },
@@ -1200,149 +1203,337 @@ export default function App() {
                     </div>
                   ))}
                 </div>
-                <div style={{ display:"flex", gap:20, marginBottom:12, fontSize:12, color:t.textSecondary }}>
-                  <span>Fuel at scale: {scaleSession.fuelAtScale} gal</span>
-                  <span>Odometer: {scaleSession.odometerAtScale ? scaleSession.odometerAtScale.toLocaleString() : "—"}</span>
+                <div style={{ display:"flex", gap:16, marginBottom:16, fontSize:12, color:t.textSecondary }}>
+                  <span>Fuel at scale: <strong style={{ color:t.text }}>{scaleSession.fuelAtScale} gal</strong></span>
+                  {scaleSession.odometerAtScale && <span>Odometer: <strong style={{ color:t.text }}>{scaleSession.odometerAtScale.toLocaleString()}</strong></span>}
                 </div>
-                {!scaleClearConfirm ? (
-                  <button onClick={()=>setScaleClearConfirm(true)}
-                    style={{ fontSize:11, color:A.red, background:"transparent", border:`1px solid ${A.red}40`, borderRadius:8, padding:"6px 14px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
-                    Clear Session
+                <div style={{ display:"flex", gap:8 }}>
+                  <button onClick={() => switchTab("main")}
+                    style={{ flex:1, padding:"12px", borderRadius:12, border:"none", background:A.green, color:isDark?"#0d1a0f":"#fff", fontSize:13, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer" }}>
+                    Go to Calculator
                   </button>
-                ) : (
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontSize:12, color:A.red }}>Clear this session?</span>
-                    <button onClick={() => { setScaleSession(null); setScaleClearConfirm(false); }}
-                      style={{ fontSize:12, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Yes</button>
-                    <button onClick={()=>setScaleClearConfirm(false)}
-                      style={{ fontSize:12, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 14px", cursor:"pointer" }}>Cancel</button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* ── Section C: Fuel Burn Estimator ── */}
-          {scaleSession && (
-            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:16, boxShadow:t.shadow }}>
-              <div style={SL}>Fuel Burn Estimator</div>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
-                <label style={{ fontSize:13, color:t.textSub, fontWeight:600 }}>Current Odometer</label>
-                <input type="number" inputMode="decimal" value={currentOdometer} placeholder="—" onChange={e=>setCurrentOdometer(e.target.value)}
-                  style={{ width:120, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:16, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"8px" }} />
-              </div>
-
-              {currentOdometer !== "" && scaleSession.odometerAtScale && (() => {
-                const milesDriven  = Math.max(0, Number(currentOdometer) - scaleSession.odometerAtScale);
-                const galBurned    = Math.round((milesDriven / mpgNum) * 10) / 10;
-                const estFuel      = Math.max(0, scaleSession.fuelAtScale - galBurned);
-                const burnExceeded = galBurned > scaleSession.fuelAtScale;
-                const estFraction  = Math.min(estFuel / fuelCapNum, 1);
-                return (
-                  <div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8, marginBottom:16 }}>
-                      {[
-                        { label:"Miles Driven",    val:`${milesDriven.toLocaleString()} mi`, color:t.text },
-                        { label:"Gal Burned",      val:`~${galBurned} gal`,                  color:A.orange },
-                        { label:"Est. Fuel Level", val:`~${Math.round(estFuel)} gal`,         color:burnExceeded?A.red:A.green },
-                        { label:"Est. Range Left", val:`~${Math.round(estFuel*mpgNum)} mi`,   color:A.blue },
-                      ].map(({ label, val, color }) => (
-                        <div key={label} style={{ background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:12, padding:"10px 12px", textAlign:"center" }}>
-                          <div style={{ fontSize:10, color:t.textSecondary, textTransform:"uppercase", letterSpacing:0.5, marginBottom:4 }}>{label}</div>
-                          <div style={{ fontSize:16, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{val}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <FuelGauge fraction={estFraction} color={A.green} t={t} isDark={isDark} />
-                    {burnExceeded && (
-                      <div style={{ marginTop:10, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:10, padding:"10px 14px", fontSize:12, color:isDark?"#ff6b6b":"#dc2626", lineHeight:1.5 }}>
-                        ⚠️ Estimated fuel level is 0 — you may have refueled since scaling
-                      </div>
-                    )}
-                    <button
-                      onClick={() => {
-                        setGallonsNow(String(Math.round(estFuel)));
-                        setScaleApplyMsg(true);
-                        setTimeout(() => { setScaleApplyMsg(false); switchTab("main"); }, 1300);
-                      }}
-                      style={{ width:"100%", marginTop:14, padding:"14px", borderRadius:12, border:"none", background:A.green, color:isDark?"#0d1a0f":"#fff", fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", boxShadow:`0 4px 16px ${A.green}40` }}>
-                      Apply to Fuel Tab
+                  {!scaleClearConfirm ? (
+                    <button onClick={() => setScaleClearConfirm(true)}
+                      style={{ padding:"12px 16px", borderRadius:12, border:`1px solid ${A.red}40`, background:"transparent", color:A.red, fontSize:13, fontWeight:700, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>
+                      Clear
                     </button>
-                  </div>
-                );
-              })()}
-
-              {currentOdometer !== "" && !scaleSession.odometerAtScale && (
-                <div style={{ fontSize:12, color:t.textFaint, fontStyle:"italic" }}>
-                  No odometer recorded at scale — add one via manual entry below to enable burn calculation.
+                  ) : (
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <span style={{ fontSize:11, color:A.red }}>Clear session?</span>
+                      <button onClick={() => { setScaleSession(null); setScaleClearConfirm(false); }}
+                        style={{ fontSize:12, fontWeight:700, color:"#fff", background:A.red, border:"none", borderRadius:8, padding:"6px 12px", cursor:"pointer" }}>Yes</button>
+                      <button onClick={() => setScaleClearConfirm(false)}
+                        style={{ fontSize:12, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"6px 12px", cursor:"pointer" }}>No</button>
+                    </div>
+                  )}
                 </div>
-              )}
-              {currentOdometer === "" && (
-                <div style={{ fontSize:12, color:t.textFaint }}>Enter your current odometer reading above to calculate fuel burn since scaling.</div>
-              )}
+              </div>
+              <button onClick={() => { setScaleSession(null); resetScaleWizard(); }}
+                style={{ width:"100%", padding:"14px", borderRadius:12, border:`1px solid ${t.border}`, background:"transparent", color:t.textMuted, fontSize:13, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", cursor:"pointer" }}>
+                Start New Session
+              </button>
             </div>
           )}
 
-          {/* ── Section D: Manual Scale Entry ── */}
-          <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, overflow:"hidden", boxShadow:t.shadow, marginBottom:16 }}>
-            <button onClick={()=>setScaleManualExpanded(v=>!v)}
-              style={{ width:"100%", padding:"16px", background:"transparent", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <span style={{ fontSize:13, fontWeight:700, color:t.textSub }}>Enter weights manually</span>
-              <span style={{ fontSize:11, color:t.textFaint, transition:"transform 0.3s", display:"inline-block", transform:scaleManualExpanded?"rotate(180deg)":"rotate(0deg)" }}>▲</span>
-            </button>
+          {/* ── Wizard Step 0: Session Type ── */}
+          {scaleStep === 0 && !scaleSession && (
+            <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"20px 16px", boxShadow:t.shadow }}>
+              <div style={{ textAlign:"center", marginBottom:20 }}>
+                <div style={{ fontFamily:"'Barlow Condensed',sans-serif", fontSize:22, fontWeight:800, color:t.text, letterSpacing:0.3, marginBottom:6 }}>Start Scale Session</div>
+                <div style={{ fontSize:13, color:t.textMuted, lineHeight:1.5 }}>What are you doing at the scale?</div>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                <button onClick={() => { setSessionType("scale"); setScaleStep(1); }}
+                  style={{ width:"100%", padding:"16px", borderRadius:14, border:`1.5px solid ${t.border}`, background:t.inputBg, color:t.text, textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:14 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:isDark?"rgba(96,165,250,0.15)":"rgba(29,78,216,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>⚖️</div>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:700, color:t.text, fontFamily:"'DM Sans',sans-serif", marginBottom:2 }}>Scale Only</div>
+                    <div style={{ fontSize:12, color:t.textMuted, lineHeight:1.4 }}>Just checking weight — fueling later or not at all</div>
+                  </div>
+                </button>
+                <button onClick={() => { setSessionType("fuel"); setScaleStep(1); }}
+                  style={{ width:"100%", padding:"16px", borderRadius:14, border:`1.5px solid ${A.green}50`, background:isDark?"rgba(74,222,128,0.06)":"rgba(22,163,74,0.04)", color:t.text, textAlign:"left", cursor:"pointer", display:"flex", alignItems:"center", gap:14 }}>
+                  <div style={{ width:40, height:40, borderRadius:10, background:isDark?"rgba(74,222,128,0.15)":"rgba(22,163,74,0.08)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>⛽</div>
+                  <div>
+                    <div style={{ fontSize:14, fontWeight:700, color:t.text, fontFamily:"'DM Sans',sans-serif", marginBottom:2 }}>Weigh &amp; Fuel Stop</div>
+                    <div style={{ fontSize:12, color:t.textMuted, lineHeight:1.4 }}>Fueling at this stop — log weight &amp; fuel together</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
 
-            {scaleManualExpanded && (
-              <div style={{ padding:"0 16px 16px" }}>
-                <div style={{ height:1, background:t.divider, marginBottom:16 }} />
+          {/* ── Wizard Step 1: Enter Weights ── */}
+          {scaleStep === 1 && (
+            <div>
+              {/* Progress bar */}
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+                <button onClick={resetScaleWizard}
+                  style={{ fontSize:11, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"4px 10px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                  ← Back
+                </button>
+                <div style={{ flex:1, display:"flex", gap:4 }}>
+                  {[1,2,3].map(s => <div key={s} style={{ flex:1, height:3, borderRadius:99, background:s<=scaleStep?A.blue:t.border }} />)}
+                </div>
+                <span style={{ fontSize:11, color:t.textFaint, fontWeight:600, whiteSpace:"nowrap" }}>1 of 3</span>
+              </div>
 
-                {/* Three axle weight inputs */}
-                <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+              <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
+                <div style={SL}>Scale Weights</div>
+                <div style={{ fontSize:13, color:t.textMuted, marginBottom:16, lineHeight:1.5 }}>Scan your ticket or enter weights manually</div>
+
+                {/* Scan button */}
+                {!scanning && !scanResult && (
+                  <>
+                    <button onClick={() => fileInputRef.current?.click()}
+                      style={{ width:"100%", padding:"13px", borderRadius:12, border:`1.5px dashed ${t.borderStrong}`, background:"transparent", color:A.blue, fontSize:14, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", marginBottom:16 }}>
+                      Scan Scale Ticket
+                    </button>
+                    {scanError && (
+                      <div style={{ marginBottom:12, background:"rgba(255,68,68,0.08)", border:"1px solid rgba(255,68,68,0.3)", borderRadius:10, padding:"10px 14px", fontSize:12, color:isDark?"#ff6b6b":"#dc2626" }}>
+                        {scanError}
+                      </div>
+                    )}
+                  </>
+                )}
+                {scanning && (
+                  <div style={{ textAlign:"center", padding:"8px 0 16px", fontSize:13, color:t.textMuted, animation:"pulseAnim 1.4s ease-in-out infinite" }}>
+                    Reading ticket…
+                  </div>
+                )}
+
+                {/* Scan review */}
+                {scanResult && !scanning && (
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ fontSize:11, color:t.textMuted, marginBottom:10 }}>Review — tap a value to correct it</div>
+                    {[
+                      { label:"Steer",   val:scanReviewSteer,   set:setScanReviewSteer,   conf:scanResult.steer?.confidence },
+                      { label:"Drives",  val:scanReviewDrives,  set:setScanReviewDrives,  conf:scanResult.drives?.confidence },
+                      { label:"Trailer", val:scanReviewTrailer, set:setScanReviewTrailer, conf:scanResult.trailer?.confidence },
+                    ].map(({ label, val, set, conf }) => {
+                      const dotColor = conf==="high" ? A.green : conf==="medium" ? A.yellow : A.red;
+                      return (
+                        <div key={label} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                          <div style={{ width:8, height:8, borderRadius:"50%", background:dotColor, flexShrink:0 }} />
+                          <span style={{ fontSize:12, color:t.textSecondary, width:48, flexShrink:0 }}>{label}</span>
+                          <input type="number" inputMode="numeric" value={val} placeholder="—" onChange={e=>set(e.target.value)}
+                            style={{ flex:1, minWidth:0, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:15, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"7px" }} />
+                          <span style={{ fontSize:11, color:t.textFaint, flexShrink:0 }}>lb</span>
+                        </div>
+                      );
+                    })}
+                    <div style={{ fontSize:10, color:t.textFaint, marginBottom:10 }}>Green = high confidence · Yellow = uncertain · Red = could not read</div>
+                    <div style={{ display:"flex", gap:8 }}>
+                      <button onClick={() => { setScanResult(null); setScanError(null); }}
+                        style={{ flex:1, padding:"10px", borderRadius:8, border:`1px solid ${t.border}`, background:"transparent", color:t.textMuted, fontSize:12, fontWeight:600, fontFamily:"'DM Sans',sans-serif", cursor:"pointer" }}>
+                        Discard
+                      </button>
+                      <button onClick={applyScannedWeights}
+                        style={{ flex:2, padding:"10px", borderRadius:10, border:"none", background:A.green, color:isDark?"#0d1a0f":"#fff", fontSize:13, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer" }}>
+                        Use These Weights
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Manual weight inputs */}
+                <div style={{ display:"flex", gap:8, marginBottom:4 }}>
                   {[
-                    { label:"Steer",   val:scaleManualSteer,   set:setScaleManualSteer },
-                    { label:"Drives",  val:scaleManualDrives,  set:setScaleManualDrives },
-                    { label:"Trailer", val:scaleManualTrailer, set:setScaleManualTrailer },
+                    { label:"Steer",   val:wizardSteer,   set:setWizardSteer },
+                    { label:"Drives",  val:wizardDrives,  set:setWizardDrives },
+                    { label:"Trailer", val:wizardTrailer, set:setWizardTrailer },
                   ].map(({ label, val, set }) => (
                     <div key={label} style={{ flex:1, minWidth:0 }}>
-                      <div style={{ background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:12, padding:"12px 8px", textAlign:"center" }}>
-                        <div style={{ fontSize:10, color:t.textSecondary, letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>{label}</div>
+                      <div style={{ background:val?t.inputBg:"rgba(239,68,68,0.06)", border:`1px solid ${val?t.border:"rgba(239,68,68,0.3)"}`, borderRadius:12, padding:"12px 8px", textAlign:"center" }}>
+                        <div style={{ fontSize:10, color:val?t.textSecondary:"#ef4444", letterSpacing:1, textTransform:"uppercase", marginBottom:8 }}>{label}{!val?" *":""}</div>
                         <input type="number" inputMode="numeric" value={val} placeholder="—" onChange={e=>set(e.target.value)}
-                          style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1.5px solid ${t.borderStrong}`, color:t.text, fontSize:15, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"4px 0" }} />
+                          style={{ width:"100%", background:"transparent", border:"none", borderBottom:`1.5px solid ${val?t.borderStrong:"rgba(239,68,68,0.4)"}`, color:val?t.text:"#888", fontSize:15, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"4px 0" }} />
                         <div style={{ fontSize:10, color:t.textFaint, marginTop:4 }}>lb</div>
                       </div>
                     </div>
                   ))}
                 </div>
+                {(!wizardSteer || !wizardDrives || !wizardTrailer) && (
+                  <div style={{ fontSize:11, color:"#ef4444", opacity:0.75, textAlign:"center", marginTop:8 }}>All three axle weights are required</div>
+                )}
+              </div>
 
-                {/* Fuel + Odometer */}
-                <div style={{ display:"flex", gap:8, marginBottom:16 }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:11, color:t.textSecondary, marginBottom:6 }}>Fuel at Scale (gal)</div>
-                    <input type="number" inputMode="decimal" value={scaleManualFuel} placeholder="—" onChange={e=>setScaleManualFuel(e.target.value)}
-                      style={{ width:"100%", background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:15, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"10px", boxSizing:"border-box" }} />
-                  </div>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:11, color:t.textSecondary, marginBottom:6 }}>Odometer at Scale</div>
-                    <input type="number" inputMode="numeric" value={scaleManualOdo} placeholder="—" onChange={e=>setScaleManualOdo(e.target.value)}
-                      style={{ width:"100%", background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:8, color:t.text, fontSize:15, fontWeight:700, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"10px", boxSizing:"border-box" }} />
-                  </div>
+              <button
+                onClick={() => setScaleStep(2)}
+                disabled={!wizardSteer || !wizardDrives || !wizardTrailer}
+                style={{ width:"100%", padding:"16px", borderRadius:14, border:"none",
+                  background:(wizardSteer&&wizardDrives&&wizardTrailer)?A.blue:t.border,
+                  color:(wizardSteer&&wizardDrives&&wizardTrailer)?"#fff":t.textFaint,
+                  fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5,
+                  cursor:(wizardSteer&&wizardDrives&&wizardTrailer)?"pointer":"not-allowed",
+                  boxShadow:(wizardSteer&&wizardDrives&&wizardTrailer)?`0 4px 16px ${A.blue}40`:"none",
+                  transition:"all 0.2s" }}>
+                NEXT: Fuel &amp; Odometer →
+              </button>
+            </div>
+          )}
+
+          {/* ── Wizard Step 2: Fuel & Odometer at Scale ── */}
+          {scaleStep === 2 && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+                <button onClick={() => setScaleStep(1)}
+                  style={{ fontSize:11, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"4px 10px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                  ← Back
+                </button>
+                <div style={{ flex:1, display:"flex", gap:4 }}>
+                  {[1,2,3].map(s => <div key={s} style={{ flex:1, height:3, borderRadius:99, background:s<=scaleStep?A.blue:t.border }} />)}
+                </div>
+                <span style={{ fontSize:11, color:t.textFaint, fontWeight:600, whiteSpace:"nowrap" }}>2 of 3</span>
+              </div>
+
+              <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
+                <div style={SL}>At-Scale Conditions</div>
+                <div style={{ fontSize:13, color:t.textMuted, marginBottom:20, lineHeight:1.5 }}>
+                  Record your fuel level and odometer <strong style={{ color:t.text }}>right now at the scale</strong>
                 </div>
 
-                <button
-                  onClick={saveManualScaleSession}
-                  disabled={!scaleManualSteer || !scaleManualDrives || !scaleManualTrailer}
-                  style={{
-                    width:"100%", padding:"14px", borderRadius:12, border:"none",
-                    background: (scaleManualSteer&&scaleManualDrives&&scaleManualTrailer) ? A.green : t.border,
-                    color: (scaleManualSteer&&scaleManualDrives&&scaleManualTrailer) ? (isDark?"#0d1a0f":"#fff") : t.textFaint,
-                    fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5,
-                    cursor: (scaleManualSteer&&scaleManualDrives&&scaleManualTrailer) ? "pointer" : "not-allowed",
-                    transition:"all 0.2s",
-                  }}>
-                  Save Scale Session
-                </button>
+                <div style={{ marginBottom:20 }}>
+                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub, marginBottom:8 }}>
+                    Fuel Level at Scale <span style={{ color:"#ef4444" }}>*</span>
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <input type="number" inputMode="decimal" value={wizardFuelAtScale} placeholder="—"
+                      onChange={e => setWizardFuelAtScale(e.target.value)}
+                      style={{ flex:1, background:wizardFuelAtScale?t.inputBg:"rgba(239,68,68,0.06)", border:`1px solid ${wizardFuelAtScale?t.border:"rgba(239,68,68,0.3)"}`, borderRadius:10, color:t.text, fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"12px" }} />
+                    <span style={{ fontSize:14, color:t.textFaint, fontWeight:600 }}>gal</span>
+                  </div>
+                  {!wizardFuelAtScale && <div style={{ fontSize:11, color:"#ef4444", opacity:0.75, marginTop:6 }}>Required to enable fuel burn estimation</div>}
+                </div>
+
+                <div>
+                  <div style={{ fontSize:12, fontWeight:700, color:t.textSub, marginBottom:4 }}>Odometer at Scale</div>
+                  <div style={{ fontSize:11, color:t.textFaint, marginBottom:8 }}>Optional — enables automatic weight estimation as you drive</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+                    <input type="number" inputMode="numeric" value={wizardOdoAtScale} placeholder="—"
+                      onChange={e => setWizardOdoAtScale(e.target.value)}
+                      style={{ flex:1, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:10, color:t.text, fontSize:22, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"12px" }} />
+                    <span style={{ fontSize:14, color:t.textFaint, fontWeight:600 }}>mi</span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+
+              <button
+                onClick={() => {
+                  if (sessionType === "fuel" && !fuelAtPump) setFuelAtPump(wizardFuelAtScale);
+                  setScaleStep(3);
+                }}
+                disabled={!wizardFuelAtScale}
+                style={{ width:"100%", padding:"16px", borderRadius:14, border:"none",
+                  background:wizardFuelAtScale?A.blue:t.border,
+                  color:wizardFuelAtScale?"#fff":t.textFaint,
+                  fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5,
+                  cursor:wizardFuelAtScale?"pointer":"not-allowed",
+                  boxShadow:wizardFuelAtScale?`0 4px 16px ${A.blue}40`:"none",
+                  transition:"all 0.2s" }}>
+                {sessionType === "fuel" ? "NEXT: Fuel at Pump →" : "NEXT: Review & Save →"}
+              </button>
+            </div>
+          )}
+
+          {/* ── Wizard Step 3: Confirm / Fuel at Pump ── */}
+          {scaleStep === 3 && (
+            <div>
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:16 }}>
+                <button onClick={() => setScaleStep(2)}
+                  style={{ fontSize:11, color:t.textMuted, background:"transparent", border:`1px solid ${t.border}`, borderRadius:8, padding:"4px 10px", cursor:"pointer", fontFamily:"'DM Sans',sans-serif" }}>
+                  ← Back
+                </button>
+                <div style={{ flex:1, display:"flex", gap:4 }}>
+                  {[1,2,3].map(s => <div key={s} style={{ flex:1, height:3, borderRadius:99, background:s<=scaleStep?A.blue:t.border }} />)}
+                </div>
+                <span style={{ fontSize:11, color:t.textFaint, fontWeight:600, whiteSpace:"nowrap" }}>3 of 3</span>
+              </div>
+
+              {/* Scale Only — review & save */}
+              {sessionType === "scale" && (
+                <div>
+                  <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
+                    <div style={SL}>Confirm Scale Session</div>
+                    <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+                      {[
+                        { label:"Steer",   val:wizardSteer,   color:A.blue },
+                        { label:"Drives",  val:wizardDrives,  color:A.yellow },
+                        { label:"Trailer", val:wizardTrailer, color:A.orange },
+                      ].map(({ label, val, color }) => (
+                        <div key={label} style={{ flex:1, background:t.inputBg, border:`1px solid ${t.border}`, borderRadius:12, padding:"10px 8px", textAlign:"center" }}>
+                          <div style={{ fontSize:9, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
+                          <div style={{ fontSize:16, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{fmt(Number(val)||0)}</div>
+                          <div style={{ fontSize:9, color:t.textFaint, marginTop:2 }}>lb</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display:"flex", gap:16, fontSize:12, color:t.textSecondary }}>
+                      <span>Fuel: <strong style={{ color:t.text }}>{wizardFuelAtScale} gal</strong></span>
+                      {wizardOdoAtScale && <span>Odometer: <strong style={{ color:t.text }}>{Number(wizardOdoAtScale).toLocaleString()}</strong></span>}
+                    </div>
+                  </div>
+                  <button onClick={completeScaleSession}
+                    style={{ width:"100%", padding:"16px", borderRadius:14, border:"none", background:A.green, color:isDark?"#0d1a0f":"#fff", fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5, cursor:"pointer", boxShadow:`0 4px 16px ${A.green}40`, transition:"all 0.2s" }}>
+                    SAVE SESSION &amp; APPLY WEIGHTS
+                  </button>
+                </div>
+              )}
+
+              {/* Weigh & Fuel — enter pump fuel */}
+              {sessionType === "fuel" && (
+                <div>
+                  <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:16, padding:"16px", marginBottom:12, boxShadow:t.shadow }}>
+                    <div style={SL}>Current Fuel at the Pump</div>
+                    <div style={{ fontSize:13, color:t.textMuted, marginBottom:6, lineHeight:1.5 }}>
+                      You're at the pump. Confirm your fuel level — this is used to calculate how much you can safely add.
+                    </div>
+                    <div style={{ fontSize:11, color:t.textFaint, marginBottom:16 }}>
+                      Scale fuel reference: <strong style={{ color:t.text }}>{wizardFuelAtScale} gal</strong>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                      <input type="number" inputMode="decimal" value={fuelAtPump} placeholder="—"
+                        onChange={e => setFuelAtPump(e.target.value)}
+                        style={{ flex:1, background:fuelAtPump?t.inputBg:"rgba(239,68,68,0.06)", border:`1px solid ${fuelAtPump?t.border:"rgba(239,68,68,0.3)"}`, borderRadius:10, color:t.text, fontSize:24, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", textAlign:"center", outline:"none", padding:"14px" }} />
+                      <span style={{ fontSize:14, color:t.textFaint, fontWeight:600 }}>gal</span>
+                    </div>
+                    {!fuelAtPump && <div style={{ fontSize:11, color:"#ef4444", opacity:0.75 }}>Enter current fuel level to continue</div>}
+                  </div>
+
+                  {/* Weight summary */}
+                  <div style={{ background:t.surface, border:`1px solid ${t.border}`, borderRadius:14, padding:"12px 14px", marginBottom:12 }}>
+                    <div style={{ fontSize:11, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:10 }}>Weights Being Applied</div>
+                    <div style={{ display:"flex", gap:8 }}>
+                      {[
+                        { label:"Steer",   val:wizardSteer,   color:A.blue },
+                        { label:"Drives",  val:wizardDrives,  color:A.yellow },
+                        { label:"Trailer", val:wizardTrailer, color:A.orange },
+                      ].map(({ label, val, color }) => (
+                        <div key={label} style={{ flex:1, textAlign:"center" }}>
+                          <div style={{ fontSize:9, color:t.textSecondary, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
+                          <div style={{ fontSize:14, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color }}>{fmt(Number(val)||0)}</div>
+                          <div style={{ fontSize:9, color:t.textFaint }}>lb</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={completeScaleSession}
+                    disabled={!fuelAtPump}
+                    style={{ width:"100%", padding:"16px", borderRadius:14, border:"none",
+                      background:fuelAtPump?A.green:t.border,
+                      color:fuelAtPump?(isDark?"#0d1a0f":"#fff"):t.textFaint,
+                      fontSize:15, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", letterSpacing:0.5,
+                      cursor:fuelAtPump?"pointer":"not-allowed",
+                      boxShadow:fuelAtPump?`0 4px 16px ${A.green}40`:"none",
+                      transition:"all 0.2s" }}>
+                    APPLY &amp; CALCULATE →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
 
         </> /* end scale tab */}
 
