@@ -216,8 +216,8 @@ function FuelGauge({ fraction, color, t, isDark, onTickClick }) {
   const needleR = 54;
   const rotation = clampedF * 180 - 180;
 
-  const tickFracs = [0, 0.25, 0.5, 0.75, 1.0];
-  const tickLabels = ["E", "¼", "½", "¾", "F"];
+  const tickFracs  = [0, 0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875, 1.0];
+  const tickLabels = ["E", "⅛",  "¼",  "⅜",  "½",  "⅝",  "¾",  "⅞",  "F"];
 
   const fuelLow = clampedF < 0.13;
   const fuelMed = clampedF < 0.26;
@@ -233,33 +233,31 @@ function FuelGauge({ fraction, color, t, isDark, onTickClick }) {
         style={{ transition:"stroke-dasharray 0.45s cubic-bezier(.4,0,.2,1), stroke 0.3s" }}
       />
       {tickFracs.map((f, i) => {
-        const angle = Math.PI * (1 - f);
-        const innerR = r - 14;
+        const angle  = Math.PI * (1 - f);
+        const isE    = i === 0;
+        const isF    = i === 8;
+        const isMajor = i % 2 === 0; // E ¼ ½ ¾ F
+        const innerR = isMajor ? r - 14 : r - 10;
         const outerR = r - 7;
+        const labelR = isMajor ? r - 22 : r - 20;
         const x1 = cx + innerR * Math.cos(angle);
         const y1 = cy - innerR * Math.sin(angle);
         const x2 = cx + outerR * Math.cos(angle);
         const y2 = cy - outerR * Math.sin(angle);
-        const labelR = r - 22;
         const lx = cx + labelR * Math.cos(angle);
         const ly = cy - labelR * Math.sin(angle);
-        const isE = i === 0;
-        const isF = i === 4;
-        const isActive = onTickClick && Math.abs(clampedF - f) < 0.01;
         const tickColor = isE ? "#ff4444" : isF ? gaugeColor : t.textFaint;
         return (
           <g key={f} onClick={onTickClick ? () => onTickClick(f) : undefined}
             style={{ cursor: onTickClick ? "pointer" : "default" }}>
-            {/* Invisible hit area — large enough for a fingertip */}
-            {onTickClick && <circle cx={lx} cy={ly} r={18} fill="transparent" />}
-            {/* Active ring */}
-            {isActive && <circle cx={lx} cy={ly} r={13} fill="transparent" stroke={tickColor} strokeWidth={1.5} opacity={0.5} />}
+            {onTickClick && <circle cx={lx} cy={ly} r={16} fill="transparent" />}
             <line x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={isActive ? tickColor : tickColor}
-              strokeWidth={isActive ? 2.5 : (isE || isF ? 2 : 1.5)} strokeLinecap="round" />
+              stroke={tickColor} strokeWidth={isMajor ? (isE || isF ? 2 : 1.5) : 1}
+              strokeLinecap="round" />
             <text x={lx} y={ly + 3} textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: isE || isF ? 10 : 9, fontWeight: isActive || isE || isF ? 700 : 400,
-                fontFamily:"'DM Sans',sans-serif", fill: isActive ? tickColor : (isE ? "#ff4444" : isF ? gaugeColor : t.textFaint),
+              style={{ fontSize: isE || isF ? 10 : isMajor ? 9 : 7.5,
+                fontWeight: isE || isF ? 700 : 400,
+                fontFamily:"'DM Sans',sans-serif", fill: tickColor,
                 userSelect:"none" }}>
               {tickLabels[i]}
             </text>
