@@ -208,7 +208,7 @@ function ModeButton({ active, label, color, onClick }) {
   );
 }
 
-function FuelGauge({ fraction, color, t, isDark }) {
+function FuelGauge({ fraction, color, t, isDark, onTickClick }) {
   const cx = 100, cy = 100, r = 72;
   const arcLen = Math.PI * r;
   const clampedF = Math.max(0, Math.min(1, isNaN(fraction) ? 0 : fraction));
@@ -245,14 +245,22 @@ function FuelGauge({ fraction, color, t, isDark }) {
         const ly = cy - labelR * Math.sin(angle);
         const isE = i === 0;
         const isF = i === 4;
+        const isActive = onTickClick && Math.abs(clampedF - f) < 0.01;
+        const tickColor = isE ? "#ff4444" : isF ? gaugeColor : t.textFaint;
         return (
-          <g key={f}>
+          <g key={f} onClick={onTickClick ? () => onTickClick(f) : undefined}
+            style={{ cursor: onTickClick ? "pointer" : "default" }}>
+            {/* Invisible hit area — large enough for a fingertip */}
+            {onTickClick && <circle cx={lx} cy={ly} r={18} fill="transparent" />}
+            {/* Active ring */}
+            {isActive && <circle cx={lx} cy={ly} r={13} fill="transparent" stroke={tickColor} strokeWidth={1.5} opacity={0.5} />}
             <line x1={x1} y1={y1} x2={x2} y2={y2}
-              stroke={isE ? "#ff4444" : isF ? gaugeColor : t.textFaint}
-              strokeWidth={isE || isF ? 2 : 1.5} strokeLinecap="round" />
+              stroke={isActive ? tickColor : tickColor}
+              strokeWidth={isActive ? 2.5 : (isE || isF ? 2 : 1.5)} strokeLinecap="round" />
             <text x={lx} y={ly + 3} textAnchor="middle" dominantBaseline="middle"
-              style={{ fontSize: isE || isF ? 10 : 9, fontWeight: isE || isF ? 700 : 400,
-                fontFamily:"'DM Sans',sans-serif", fill: isE ? "#ff4444" : isF ? gaugeColor : t.textFaint }}>
+              style={{ fontSize: isE || isF ? 10 : 9, fontWeight: isActive || isE || isF ? 700 : 400,
+                fontFamily:"'DM Sans',sans-serif", fill: isActive ? tickColor : (isE ? "#ff4444" : isF ? gaugeColor : t.textFaint),
+                userSelect:"none" }}>
               {tickLabels[i]}
             </text>
           </g>
@@ -1078,7 +1086,8 @@ export default function App() {
               const sliderVal = !hasValue ? -1 : Math.round(fraction * 8);
               return (
                 <div style={{ marginBottom:8 }}>
-                  <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark} />
+                  <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark}
+                    onTickClick={f => setGallonsNow(String(Math.round(f * fuelCapNum)))} />
                   {hasValue ? (
                     <div style={{ textAlign:"center", marginTop:4, marginBottom:8 }}>
                       <span style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:gaugeColor }}>
@@ -1425,7 +1434,8 @@ export default function App() {
                     const sliderVal = !hasValue ? -1 : Math.round(fraction * 8);
                     return (
                       <div>
-                        <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark} />
+                        <FuelGauge fraction={hasValue ? fraction : 0} color={A.green} t={t} isDark={isDark}
+                          onTickClick={f => setWizardFuelAtScale(String(Math.round(f * fuelCapNum)))} />
                         {hasValue ? (
                           <div style={{ textAlign:"center", marginTop:4, marginBottom:8 }}>
                             <span style={{ fontSize:18, fontWeight:800, fontFamily:"'Barlow Condensed',sans-serif", color:gaugeColor }}>
